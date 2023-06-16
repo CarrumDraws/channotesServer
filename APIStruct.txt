@@ -1,0 +1,29 @@
+Get > Post > Put > Delete
+
+// LOGIN ----------
+post("/auth/login’) : Validates that Google ID is valid
+
+// FOLDERS ---------
+get("/folders/:userid") : Gets Homepage Folders
+get("/folders/:folderid/nested") : Gets Folders inside "Folder"
+post("/folders") : Adds Folder
+put("/folders/:folderid") : Queries :  Rename, Move
+delete("/folders/:folderid) : Deletes Folder
+
+// NOTES ---------
+get("/notes/:userid") : Gets Homepage Notes
+get("/notes/:userid/shared") : Gets Shared Notes
+get("/notes/:userid/shared/:friendid") : Get Shared Notes between User and Friend
+get("/notes/:userid/:folderid") : Gets Notes inside "Folder"
+post("/notes") : Adds Note
+post("/notes/:noteid") : Edit a Note’s Contents, Sets Time Accessed, Renames Note
+put("/notes/:noteid) : Queries: move, pin, password, lock, color, collab
+delete("/notes/:noteid) : Deletes Note
+
+// USERS ----------
+get("/users/:userid") : Gets User Data
+get("/users/:userid/friends") : Get Friends of User
+get("/users/search") : Queries: name
+post("/users/:userid") : Sets User Data
+put("/users/:userid/:friendid") : Queries: friend, block
+

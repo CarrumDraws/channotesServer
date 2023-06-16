@@ -1,10 +1,18 @@
 import express from "express";
-import { addFolder, editFolder } from "../controllers/folders.js";
+import {
+  homeFolders,
+  nestedFolders,
+  newFolder,
+  editFolder,
+  deleteFolder,
+} from "../controllers/folders.js";
 
 const router = express.Router();
 
-router.post("/", addFolder);
-router.post("/:folderid", editFolder);
-router.post("/:userid", editFolder);
+router.get("/:userid", homeFolders);
+router.get("/:folderid/nested", nestedFolders);
+router.post("/", newFolder);
+router.put("/:folderid", editFolder);
+router.delete("/folders/:folderid", deleteFolder);
 
 export default router;
