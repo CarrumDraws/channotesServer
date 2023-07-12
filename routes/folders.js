@@ -1,18 +1,20 @@
-import express from "express";
-import {
-  homeFolders,
-  nestedFolders,
-  newFolder,
-  editFolder,
-  deleteFolder,
-} from "../controllers/folders.js";
-
+const express = require("express");
 const router = express.Router();
 
-router.get("/:userid", homeFolders);
-router.get("/:folderid/nested", nestedFolders);
-router.post("/", newFolder);
-router.put("/:folderid", editFolder);
-router.delete("/folders/:folderid", deleteFolder);
+router.get("/:userid", (req, res) => {
+  console.log("homeFolders");
+});
+router.get("/:folderid/nested", (req, res) => {
+  console.log("nestedFolders");
+});
+router.post("/", (req, res) => {
+  console.log("newFolder");
+});
+router.put("/:folderid", (req, res) => {
+  console.log("editFolder");
+});
+router.delete("/folders/:folderid", (req, res) => {
+  console.log("deleteFolder");
+});
 
-export default router;
+module.exports = router;

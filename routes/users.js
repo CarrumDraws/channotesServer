@@ -1,18 +1,22 @@
-import express from "express";
-import {
-  userData,
-  userFriends,
-  findUser,
-  updateUser,
-  updateFriends,
-} from "../controllers/users.js";
-
+const express = require("express");
 const router = express.Router();
 
-router.get("/users/:userid", userData);
-router.get("/users/:userid/friends", userFriends);
-router.get("/users/search", findUser); // Queries: name
-router.post("/users/:userid", updateUser);
-router.put("/users/:userid/:friendid", updateFriends); // Queries: friend, block
+router.get("/users/:userid", (req, res) => {
+  console.log("userData");
+});
+router.get("/users/:userid/friends", (req, res) => {
+  console.log("userFriends");
+});
+// Queries: name
+router.get("/users/search", (req, res) => {
+  console.log("findUser");
+});
+router.post("/users/:userid", (req, res) => {
+  console.log("updateUser");
+});
+// Queries: friend, block
+router.put("/users/:userid/:friendid", (req, res) => {
+  console.log("updateFriends");
+});
 
-export default router;
+module.exports = router;
