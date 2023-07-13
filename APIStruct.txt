@@ -5,8 +5,7 @@ post("/auth/signup") : Make new user +  Returns {User}
 get("/auth/hasuser") : Returns {User} from google_id. If none found, returns nothing.
 
 // FOLDERS ---------
-get("/folders/:userid") : Gets Homepage Folders
-get("/folders/:folderid/nested") : Gets Folders inside "Folder"
+get("/folders") : Gets Nested Folders : Queries- folderid : If !folderid then return homepage folders
 post("/folders") : Adds Folder
 put("/folders/:folderid") : Queries :  Rename, Move
 delete("/folders/:folderid) : Deletes Folder, Nested folders + notes, notephotos and shares

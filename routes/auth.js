@@ -33,11 +33,11 @@ router.post(
       let date = new Date();
       let time = date.toISOString().slice(0, 19).replace("T", " ");
       let folder = await pool.query(
-        "INSERT INTO folders (user_id, folder_id, title, date_created, date_accessed) VALUES (($1), ($2), ($3), ($4), ($5)) RETURNING *;",
+        "INSERT INTO folders (chan_id, folder_id, title, date_created, date_accessed) VALUES (($1), ($2), ($3), ($4), ($5)) RETURNING *;",
         [user.chan_id, null, "Your Folders", time, time]
       );
 
-      next();
+      next(); // returnJWT();
     } catch (err) {
       console.log(err);
       res.send(err);
@@ -64,6 +64,7 @@ async function returnJWT(req, res) {
 
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
     delete user.google_id;
+    // delete user.chan_id;
     res.status(200).json({ token, user });
   } catch (err) {
     console.log(err);
