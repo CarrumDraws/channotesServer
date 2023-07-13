@@ -7,33 +7,50 @@ const jwt = require("jsonwebtoken");
 // Takes in data, bcrypt's google_id, Saves to Postgre
 // Returns JWT + User Data using google_id
 // Also creates "Folders" Folder using your chanID.
-router.post("/signup", async (req, res) => {
-  try {
-    const { google_id, first_name, last_name, username, email, url } = req.body;
 
-    // bcrypt google_id
-    const salt = await bcrypt.genSalt();
-    const googleHash = await bcrypt.hash(google_id, salt);
+// Note: Treats google_id like a password (bcrypts google_id)...
+// ...and treats email like a username.
+router.post(
+  "/signup",
+  async (req, res, next) => {
+    try {
+      const { google_id, first_name, last_name, username, email, url } =
+        req.body;
 
-    // Save User to Postgre
-    let user = await pool.query(
-      "INSERT INTO users (google_id, first_name, last_name, username, email, url) VALUES (($1), ($2), ($3), ($4), ($5), ($6)) RETURNING *;",
-      [googleHash, first_name, last_name, username, email, url]
-    );
+      // bcrypt google_id
+      const salt = await bcrypt.genSalt();
+      const googleHash = await bcrypt.hash(google_id, salt);
 
-    user = user.rows[0];
-    const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET); // Store Chan_id in JWT
-    delete user.google_id; // Delete google_id from return val
-    res.status(200).json({ token, user });
-  } catch (err) {
-    console.log(err);
-    res.send(err);
-  }
-});
+      // Save User to Postgre
+      let user = await pool.query(
+        "INSERT INTO users (google_id, first_name, last_name, username, email, url) VALUES (($1), ($2), ($3), ($4), ($5), ($6)) RETURNING *;",
+        [googleHash, first_name, last_name, username, email, url]
+      );
+      user = user.rows[0];
+      req.query = { google_id: google_id, email: user.email }; // Store User in query for returnJWT()
 
-// Validates google_id + email + Returns JWT
+      // Create Homepage Folder
+      let date = new Date();
+      let time = date.toISOString().slice(0, 19).replace("T", " ");
+      let folder = await pool.query(
+        "INSERT INTO folders (user_id, folder_id, title, date_created, date_accessed) VALUES (($1), ($2), ($3), ($4), ($5)) RETURNING *;",
+        [user.chan_id, null, "Your Folders", time, time]
+      );
+
+      next();
+    } catch (err) {
+      console.log(err);
+      res.send(err);
+    }
+  },
+  returnJWT
+);
+
+// Validates google_id + email + Returns JWT of chanID
 // If no user found, returns nothing.
-router.get("/hasuser", async (req, res) => {
+router.get("/hasuser", returnJWT);
+
+async function returnJWT(req, res) {
   try {
     const { email, google_id } = req.query;
     let user = await pool.query("SELECT * FROM users WHERE email = ($1);", [
@@ -52,6 +69,6 @@ router.get("/hasuser", async (req, res) => {
     console.log(err);
     res.send(err);
   }
-});
+}
 
 module.exports = router;
