@@ -10,15 +10,14 @@ router.get("/", verifyToken, async (req, res) => {
     let folder_id = req.query.folder_id;
 
     // If no folder_id, get ID of your Home Folder
-    if (!folder_id)
+    if (!folder_id) {
       folder_id = await pool.query(
         "SELECT * FROM folders WHERE folder_id IS NULL AND chan_id = ($1);",
         [chan_id]
       );
-
+      folder_id = folder_id.rows[0].id;
+    }
     if (!folder_id) res.status(400).json({ msg: "folderId does not exist." });
-
-    console.log("Looking in Folder: " + folder_id);
 
     // Find Child Folders
     let folders = await pool.query(
@@ -26,6 +25,9 @@ router.get("/", verifyToken, async (req, res) => {
       [folder_id]
     );
 
+    for (let folder of folders.rows) {
+      delete folder.chan_id;
+    }
     res.send(folders.rows);
   } catch (err) {
     console.log(err);
@@ -33,37 +35,43 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
-// Create New Folder
+// Create New Folder w/ folder_id and title.
+// If !folder_id then put in Home Folder.
 router.post("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
-    let folderId = req.query.folderid;
+    let { folder_id, title } = req.body;
 
-    // If no folderID, get ID of your Home Folder
-    if (!folderId)
-      folderId = await pool.query(
+    // If no folder_id, get ID of Home Folder
+    if (!folder_id) {
+      folder_id = await pool.query(
         "SELECT * FROM folders WHERE folder_id IS NULL AND chan_id = ($1);",
         [chan_id]
       );
-
-    if (!folderId) res.status(400).json({ msg: "folderId does not exist." });
+      folder_id = folder_id.rows[0].id;
+    }
+    if (!folder_id) res.status(400).json({ msg: "folder_id does not exist." });
 
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
     let folder = await pool.query(
       "INSERT INTO folders (chan_id, folder_id, title, date_created, date_accessed) VALUES (($1), ($2), ($3), ($4), ($5)) RETURNING *;",
-      [user.chan_id, null, "Your Folders", time, time]
+      [chan_id, folder_id, title, time, time]
     );
 
-    res.send(folders.rows);
+    delete folder.rows[0].chan_id;
+    res.send(folder.rows[0]);
   } catch (err) {
     console.log(err);
     res.send(err);
   }
 });
+
+// Rename/Move a Folder
 router.put("/:folderid", (req, res) => {
   console.log("editFolder");
 });
+
 router.delete("/:folderid", (req, res) => {
   console.log("deleteFolder");
 });
