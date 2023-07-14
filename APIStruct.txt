@@ -7,7 +7,7 @@ get("/auth/hasuser") : Returns {User} from google_id. If none found, returns not
 // FOLDERS ---------
 get("/folders") : Gets Nested Folders : Queries- folderid : If !folderid then return homepage folders
 post("/folders") : Adds Folder
-put("/folders/:folderid") : Queries :  Rename, Move
+put("/folders") : Queries :  folder_id, title, parent_id
 delete("/folders/:folderid) : Deletes Folder, Nested folders + notes, notephotos and shares
 
 // NOTES ---------

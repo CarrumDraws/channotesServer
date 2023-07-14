@@ -56,11 +56,11 @@ async function returnJWT(req, res) {
     let user = await pool.query("SELECT * FROM users WHERE email = ($1);", [
       email,
     ]);
-    if (!user) res.status(400).json({ msg: "User does not exist." });
+    if (!user.rows.length) return res.status(400).json("Invalid Email");
 
     user = user.rows[0];
     const isMatch = await bcrypt.compare(google_id, user.google_id);
-    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials. " });
+    if (!isMatch) return res.status(400).json("Invalid Google ID");
 
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
     delete user.google_id;

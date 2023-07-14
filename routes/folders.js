@@ -17,7 +17,6 @@ router.get("/", verifyToken, async (req, res) => {
       );
       folder_id = folder_id.rows[0].id;
     }
-    if (!folder_id) res.status(400).json({ msg: "folderId does not exist." });
 
     // Find Child Folders
     let folders = await pool.query(
@@ -25,9 +24,9 @@ router.get("/", verifyToken, async (req, res) => {
       [folder_id]
     );
 
-    for (let folder of folders.rows) {
-      delete folder.chan_id;
-    }
+    // for (let folder of folders.rows) {
+    //   delete folder.chan_id;
+    // }
     res.send(folders.rows);
   } catch (err) {
     console.log(err);
@@ -42,7 +41,6 @@ router.post("/", verifyToken, async (req, res) => {
     let chan_id = req.user.chan_id;
     let { folder_id, title } = req.body;
 
-    // If no folder_id, get ID of Home Folder
     if (!folder_id) {
       folder_id = await pool.query(
         "SELECT * FROM folders WHERE folder_id IS NULL AND chan_id = ($1);",
@@ -50,16 +48,15 @@ router.post("/", verifyToken, async (req, res) => {
       );
       folder_id = folder_id.rows[0].id;
     }
-    if (!folder_id) res.status(400).json({ msg: "folder_id does not exist." });
 
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
     let folder = await pool.query(
-      "INSERT INTO folders (chan_id, folder_id, title, date_created, date_accessed) VALUES (($1), ($2), ($3), ($4), ($5)) RETURNING *;",
-      [chan_id, folder_id, title, time, time]
+      "INSERT INTO folders (chan_id, folder_id, title, date_created) VALUES (($1), ($2), ($3), ($4)) RETURNING *;",
+      [chan_id, folder_id, title, time]
     );
 
-    delete folder.rows[0].chan_id;
+    // delete folder.rows[0].chan_id;
     res.send(folder.rows[0]);
   } catch (err) {
     console.log(err);
@@ -67,13 +64,45 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
-// Rename/Move a Folder
-router.put("/:folderid", (req, res) => {
-  console.log("editFolder");
+// Rename/Move a Folder w/ folder_id, title and parent_id
+router.put("/", verifyToken, async (req, res) => {
+  try {
+    let chan_id = req.user.chan_id;
+    let folder_id = req.query.folder_id;
+    let { title, parent_id } = req.body;
+
+    if (!folder_id || !parent_id)
+      if (!folder.rows.length) return res.status(400).send("Missing Data");
+
+    folder = await pool.query(
+      "UPDATE folders SET title = ($1), folder_id = ($2) WHERE id = ($3) AND chan_id = ($4) RETURNING *;",
+      [title, parent_id, folder_id, chan_id]
+    );
+
+    // delete folder.rows[0].chan_id;
+    res.send(folder.rows[0]);
+  } catch (err) {
+    console.log(err);
+    res.send(err);
+  }
 });
 
-router.delete("/:folderid", (req, res) => {
-  console.log("deleteFolder");
+// Delete Folder w/ folder_id
+router.delete("/", verifyToken, async (req, res) => {
+  try {
+    console.log("deleteFolder");
+    let chan_id = req.user.chan_id;
+    let folder_id = req.query.folder_id;
+
+    await pool.query(
+      "DELETE FROM folders WHERE id = ($1) AND chan_id = ($2);",
+      [folder_id, chan_id]
+    );
+    res.send("Success");
+  } catch (err) {
+    console.log(err);
+    res.send(err);
+  }
 });
 
 module.exports = router;
