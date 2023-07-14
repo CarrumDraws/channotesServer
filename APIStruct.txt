@@ -11,12 +11,14 @@ put("/folders") : Queries :  folder_id, title, parent_id
 delete("/folders/:folderid) : Deletes Folder, Nested folders + notes, notephotos and shares
 
 // NOTES ---------
-get("/notes/:userid") : Gets Homepage Notes
-get("/notes/:userid/:folderid") : Gets Notes inside "Folder"
-post("/notes") : Adds Note
-post("/notes/:noteid") : Edit a Note’s Contents, Sets Time Accessed, Renames Note
-put("/notes/:noteid) : Queries: move, pin, password, lock, fontcolor, backgroundcolor
-delete("/notes/:noteid) : Deletes Note, notephotos and shares
+get("/notes/") : Gets Notes : Queries- folder_id. If !folder_id then return homepage Notes.
+
+// NOTE --------
+get("/note/") : Gets Text of specific note
+post("/note/") : Adds New Note
+put("/note/") : Edit a Note’s Contents, Sets Time Accessed, Renames Note
+put("/note/meta) : Queries: move, pin, password, lock, fontcolor, backgroundcolor
+delete("/note/) : Deletes Note, notephotos and shares
 
 // SHARED ----------
 get(“/shared/:userid”) : Gets a User’s Shared Notes

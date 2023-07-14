@@ -21,7 +21,7 @@ async function verifyToken(req, res, next) {
     req.user = verification; // Set request data, so the next middleware can read it
     next();
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 }
 

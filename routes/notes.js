@@ -1,24 +1,38 @@
 const express = require("express");
+const pool = require("../db");
 const router = express.Router();
+const { verifyToken } = require("../middleware/auth");
 
-router.get("/notes/:userid", (req, res) => {
-  console.log("homeNotes");
-});
-router.get("/notes/:userid/:folderid", (req, res) => {
-  console.log("folderNotes");
-});
-router.post("/notes", (req, res) => {
-  console.log("newNote");
-});
-router.post("/notes/:noteid", (req, res) => {
-  console.log("editNote");
-});
-// Edit Note MetaData (move, pin, password, lock, color, collab)
-router.put("/notes/:noteid", (req, res) => {
-  console.log("editNoteMeta");
-});
-router.delete("/notes/:noteid", (req, res) => {
-  console.log("deleteNote");
+// Gets Array of Notes Data for Menu Display.
+// If no folder_id Gets homepage Notes.
+router.get("/", verifyToken, async (req, res) => {
+  try {
+    let chan_id = req.user.chan_id;
+    let folder_id = req.query.folder_id;
+
+    // If no folder_id, get ID of your Home Folder
+    if (!folder_id) {
+      folder_id = await pool.query(
+        "SELECT * FROM folders WHERE folder_id IS NULL AND chan_id = ($1);",
+        [chan_id]
+      );
+      folder_id = folder_id.rows[0].id;
+    }
+
+    // Find Child Notes
+    let notes = await pool.query(
+      "SELECT id, title, date_created, date_accessed, locked FROM notes WHERE folder_id = ($1);",
+      [folder_id]
+    );
+
+    // for (let note of notes.rows) {
+    //   delete note.chan_id;
+    // }
+    res.send(notes.rows);
+  } catch (err) {
+    console.log(err);
+    return res.send(err);
+  }
 });
 
 module.exports = router;
