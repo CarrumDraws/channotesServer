@@ -16,7 +16,6 @@ async function verifyToken(req, res, next) {
     let user = await pool.query("SELECT * FROM users WHERE chan_id = $1", [
       verification.chan_id,
     ]);
-
     if (!user.rows.length) return res.status(403).send("Invalid Bearer Token ");
     req.user = verification; // Set request data, so the next middleware can read it
     next();

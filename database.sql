@@ -23,7 +23,7 @@ CREATE TABLE folders (
                 REFERENCES folders(id), -- ...Together.
     title VARCHAR(255),
     date_created TIMESTAMP,
-    date_accessed TIMESTAMP
+    date_edited TIMESTAMP
 );
 
 CREATE TABLE notes (
@@ -38,7 +38,7 @@ CREATE TABLE notes (
                 REFERENCES folders(id), -- ...Together.
     title VARCHAR(255),
     date_created TIMESTAMP,
-    date_accessed TIMESTAMP,
+    date_edited TIMESTAMP,
     text TEXT,
     locked BOOL,
     password VARCHAR(255),

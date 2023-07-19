@@ -21,8 +21,8 @@ router.get("/", verifyToken, async (req, res) => {
 
     // Find Child Notes
     let notes = await pool.query(
-      "SELECT id, title, date_created, date_accessed, locked FROM notes WHERE folder_id = ($1);",
-      [folder_id]
+      "SELECT id, title, date_created, date_edited, locked FROM notes WHERE chan_id = ($1) AND folder_id = ($2);",
+      [chan_id, folder_id]
     );
 
     // for (let note of notes.rows) {

@@ -17,6 +17,16 @@ router.post(
       const { google_id, first_name, last_name, username, email, url } =
         req.body;
 
+      if (
+        !google_id ||
+        !first_name ||
+        !last_name ||
+        !username ||
+        !email ||
+        !url
+      )
+        return res.status(400).send("Missing Data");
+
       // bcrypt google_id
       const salt = await bcrypt.genSalt();
       const googleHash = await bcrypt.hash(google_id, salt);
@@ -33,8 +43,8 @@ router.post(
       let date = new Date();
       let time = date.toISOString().slice(0, 19).replace("T", " ");
       let folder = await pool.query(
-        "INSERT INTO folders (chan_id, folder_id, title, date_created, date_accessed) VALUES (($1), ($2), ($3), ($4), ($5)) RETURNING *;",
-        [user.chan_id, null, "Your Folders", time, time]
+        "INSERT INTO folders (chan_id, folder_id, title, date_created) VALUES (($1), ($2), ($3), ($4)) RETURNING *;",
+        [user.chan_id, null, "Your Folders", time]
       );
 
       next(); // returnJWT();
@@ -53,6 +63,8 @@ router.get("/hasuser", returnJWT);
 async function returnJWT(req, res) {
   try {
     const { email, google_id } = req.query;
+    if (!email || !google_id) return res.status(400).send("Missing Data");
+
     let user = await pool.query("SELECT * FROM users WHERE email = ($1);", [
       email,
     ]);
