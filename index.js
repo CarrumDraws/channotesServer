@@ -3,7 +3,7 @@ const usersRoutes = require("./routes/users.js");
 const foldersRoutes = require("./routes/folders.js");
 const noteRoutes = require("./routes/note.js");
 const notesRoutes = require("./routes/notes.js");
-const sharedRoutes = require("./routes/shared.js");
+const sharesRoutes = require("./routes/shares.js");
 const userRoutes = require("./routes/users.js");
 
 const express = require("express");
@@ -23,7 +23,7 @@ app.use("/users", usersRoutes);
 app.use("/folders", foldersRoutes);
 app.use("/note", noteRoutes);
 app.use("/notes", notesRoutes);
-app.use("/shared", sharedRoutes);
+app.use("/shares", sharesRoutes);
 app.use("/users", userRoutes);
 
 app.listen(3000, () => console.log("Server Started at PORT 3000"));

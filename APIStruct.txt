@@ -23,11 +23,11 @@ get("/note/meta") : Returns Metadata (id, folder_id, pinned, locked, password, f
 put("/note/meta) : Queries: old_folder_id, new_folder_id, pinned, locked, password, font_color, background_color : NOTE: DON'T CALL REPEATEDLY WITH SAME FOLDER_ID'S!
 
 
-// SHARED ---------- HARD: Do later
-get(“/shared/:userid”) : Gets a User’s Shared Notes
-get(“/shared/:userid/:userid”) : Get Shared Notes between User and Friend
-
-put(“/shared/:userid/:noteid”) : Toggles User’s Access to a Shared Note
+// SHARES ---------- HARD: Do later
+get(“/shares) : Gets a User’s Shared Notes
+get(“/shares/friend”) : Get Shared Notes between User and Friend
+get("/shares/note") : Get Users that are shared with a specific note id
+put(“/shares”) : Toggles User’s Access to a Shared Note
 
 // USERS ----------
 get("/users") : Gets User Data + Friends Num
