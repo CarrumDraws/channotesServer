@@ -1,5 +1,9 @@
 Get > Post > Put > Delete
 
+// FILE TESTING --------
+post("/photo") : Post a photo
+post("/photos") : Post array of photos
+
 // LOGIN ----------
 post("/auth/signup") : Make new user +  Returns {User}
 get("/auth/hasuser") [USE FOR AUTH] : Returns {User} + token from google_id. If none found, returns nothing.
@@ -8,7 +12,7 @@ get("/auth/hasuser") [USE FOR AUTH] : Returns {User} + token from google_id. If 
 get("/folders") : Gets Nested Folders : Queries- folderid : If !folderid then return homepage folders
 post("/folders") : Adds Folder
 put("/folders") : Queries :  folder_id, title, parent_id
-delete("/folders/:folderid) : Deletes Folder
+delete("/folders) : Deletes Folder
 
 // NOTES ---------
 get("/notes") : Gets Notes : Queries- folder_id. If !folder_id then return homepage Notes.
@@ -20,7 +24,7 @@ put("/note") : Edit a Note’s Contents, Sets Time Accessed, Renames Note
 delete("/note) : Deletes Note
 
 get("/note/meta") : Returns Metadata (id, folder_id, pinned, locked, password, font_color, background_color)
-put("/note/meta) : Queries: old_folder_id, new_folder_id, pinned, locked, password, font_color, background_color : NOTE: DON'T CALL REPEATEDLY WITH SAME FOLDER_ID'S!
+put("/note/meta) : Queries: folder_id, pinned, locked, password, font_color, background_color
 
 
 // SHARES ---------- HARD: Do later
