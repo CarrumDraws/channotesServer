@@ -12,9 +12,13 @@ const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const fs = require("fs");
 const pool = require("./db.js");
 
+const { verifyToken } = require("./middleware/auth.js");
+
 const multer = require("multer");
+
 // storage: Multer Config
 const storage = multer.diskStorage({
   // destination: Directory where files are saved.
@@ -28,6 +32,7 @@ const storage = multer.diskStorage({
     callback(null, Date.now() + file.originalname);
   },
 });
+
 const uploads = multer({ storage: storage });
 
 // MIDDLEWARE -----
@@ -37,15 +42,16 @@ app.use(bodyParser.json()); // Parse the JSON request body
 dotenv.config(); // Reading .env files
 
 // FILE STORAGE EXAMPLES -----
-app.post("/photo", uploads.single("single"), function (req, res, next) {
-  // .single means "One Photo with Key 'single'"
+
+app.post("/photo", uploads.single("photo"), function (req, res, next) {
+  // .single means "One Photo with Key 'photo'"
   console.log(req.file); // File Data
-  //   console.log(req.file.path); // File Path
   res.json({ status: "Single File Recieved" });
 });
 
-app.post("/photos", uploads.array("multiple"), function (req, res, next) {
-  console.log(req.files); // File Data
+app.post("/photos", uploads.array("photos"), function (req, res, next) {
+  // .array means "Multiple Photos with Key 'photos'"
+  console.log(req.files); // Files Data
   res.json({ status: "Multiple Files recieved" });
 });
 
@@ -85,6 +91,43 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
   } catch (err) {
     console.log(err);
     res.send(err);
+  }
+});
+
+// Deletes Old Profile Pic + Sets User Data
+// how to delete image?
+app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
+  try {
+    let chan_id = req.user.chan_id;
+    let { first_name, last_name, username, email } = req.body;
+
+    if (!first_name || !last_name || !username || !email)
+      return res.status(400).send("Missing Parameters");
+
+    // Get Old Image URL
+    let image = await pool.query(
+      "SELECT url FROM users WHERE chan_id = ($1);",
+      [chan_id]
+    );
+    console.log(image.rows[0].url);
+
+    // Delete Old Image
+    fs.unlink(image.rows[0].url, (err) => {
+      if (err) {
+        throw err;
+      }
+    });
+
+    // Update User
+    let user = await pool.query(
+      "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), email = ($4), url = ($5) WHERE chan_id = ($6) RETURNING *;",
+      [first_name, last_name, username, email, req.file.path, chan_id]
+    );
+    delete user.rows[0].google_id;
+    res.send(user.rows[0]);
+  } catch (err) {
+    console.log(err);
+    return res.send(err);
   }
 });
 

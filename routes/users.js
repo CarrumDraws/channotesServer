@@ -22,26 +22,26 @@ router.get("/", verifyToken, async (req, res) => {
 });
 
 // Sets User Data
-router.put("/", verifyToken, async (req, res) => {
-  try {
-    let chan_id = req.user.chan_id;
-    let { first_name, last_name, username, email, url } = req.body;
+// router.put("/", verifyToken, async (req, res) => {
+//   try {
+//     let chan_id = req.user.chan_id;
+//     let { first_name, last_name, username, email, url } = req.body;
 
-    if (!first_name || !last_name || !username || !email || !url)
-      return res.status(400).send("Missing Parameters");
+//     if (!first_name || !last_name || !username || !email || !url)
+//       return res.status(400).send("Missing Parameters");
 
-    // Update User
-    let user = await pool.query(
-      "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), email = ($4), url = ($5) WHERE chan_id = ($6) RETURNING *;",
-      [first_name, last_name, username, email, url, chan_id]
-    );
-    delete user.rows[0].google_id;
-    res.send(user.rows[0]);
-  } catch (err) {
-    console.log(err);
-    return res.send(err);
-  }
-});
+//     // Update User
+//     let user = await pool.query(
+//       "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), email = ($4), url = ($5) WHERE chan_id = ($6) RETURNING *;",
+//       [first_name, last_name, username, email, url, chan_id]
+//     );
+//     delete user.rows[0].google_id;
+//     res.send(user.rows[0]);
+//   } catch (err) {
+//     console.log(err);
+//     return res.send(err);
+//   }
+// });
 
 // Gets List of Friends
 router.get("/friends", verifyToken, async (req, res) => {

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 const bcrypt = require("bcrypt");
-
+const jwt = require("jsonwebtoken");
 // Validates google_id + email + Returns JWT of chanID
 // If no user found, returns nothing.
 router.get("/hasuser", async (req, res) => {
