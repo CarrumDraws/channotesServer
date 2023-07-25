@@ -1,6 +1,4 @@
-Get > Post > Put > Delete
-
-// FILE TESTING --------
+// MULTER FILE TESTING --------
 post("/photo") : Post a photo
 post("/photos") : Post array of photos
 
@@ -12,7 +10,7 @@ get("/auth/hasuser") [USE FOR AUTH] : Returns {User} + token from google_id. If 
 get("/folders") : Gets Nested Folders : Queries- folderid : If !folderid then return homepage folders
 post("/folders") : Adds Folder
 put("/folders") : Queries :  folder_id, title, parent_id
-delete("/folders) : Deletes Folder
+delete("/folders") : Deletes Folder
 
 // NOTES ---------
 get("/notes") : Gets Notes : Queries- folder_id. If !folder_id then return homepage Notes.
@@ -21,14 +19,13 @@ get("/notes") : Gets Notes : Queries- folder_id. If !folder_id then return homep
 get("/note") : Gets Text of specific note
 post("/note") : Adds New Note
 put("/note") : Edit a Note’s Contents, Sets Time Accessed, Renames Note
-delete("/note) : Deletes Note
+delete("/note") : Deletes Note
 
 get("/note/meta") : Returns Metadata (id, folder_id, pinned, locked, password, font_color, background_color)
 put("/note/meta) : Queries: folder_id, pinned, locked, password, font_color, background_color
 
-
-// SHARES ---------- HARD: Do later
-get(“/shares) : Gets a User’s Shared Notes
+// SHARES ---------- 
+get(“/shares") : Gets a User’s Shared Notes
 get(“/shares/friend”) : Get Shared Notes between User and Friend
 get("/shares/note") : Get Users that are shared with a specific note id
 put(“/shares”) : Toggles User’s Access to a Shared Note

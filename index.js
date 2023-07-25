@@ -5,6 +5,7 @@ const noteRoutes = require("./routes/note.js");
 const notesRoutes = require("./routes/notes.js");
 const sharesRoutes = require("./routes/shares.js");
 const userRoutes = require("./routes/users.js");
+const { verifyToken } = require("./middleware/auth.js");
 
 const express = require("express");
 const app = express();
@@ -13,13 +14,11 @@ const bcrypt = require("bcrypt");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const fs = require("fs");
+
 const pool = require("./db.js");
 
-const { verifyToken } = require("./middleware/auth.js");
-
+// FILE STORAGE -----
 const multer = require("multer");
-
-// storage: Multer Config
 const storage = multer.diskStorage({
   // destination: Directory where files are saved.
   // __dirname = C:\Users\Carrum\ReactStuff\channotes_server
@@ -32,7 +31,6 @@ const storage = multer.diskStorage({
     callback(null, Date.now() + file.originalname);
   },
 });
-
 const uploads = multer({ storage: storage });
 
 // MIDDLEWARE -----
@@ -42,7 +40,6 @@ app.use(bodyParser.json()); // Parse the JSON request body
 dotenv.config(); // Reading .env files
 
 // FILE STORAGE EXAMPLES -----
-
 app.post("/photo", uploads.single("photo"), function (req, res, next) {
   // .single means "One Photo with Key 'photo'"
   console.log(req.file); // File Data
@@ -65,7 +62,14 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
   try {
     const { google_id, first_name, last_name, username, email } = req.body;
 
-    if (!google_id || !first_name || !last_name || !username || !email)
+    if (
+      !google_id ||
+      !first_name ||
+      !last_name ||
+      !username ||
+      !email ||
+      !req.file
+    )
       return res.status(400).send("Missing Data");
 
     // bcrypt google_id
@@ -94,14 +98,13 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
   }
 });
 
-// Deletes Old Profile Pic + Sets User Data
-// how to delete image?
+// Delete Old Profile Pic + Set New User Data
 app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let { first_name, last_name, username, email } = req.body;
 
-    if (!first_name || !last_name || !username || !email)
+    if (!first_name || !last_name || !username || !email || !req.file)
       return res.status(400).send("Missing Parameters");
 
     // Get Old Image URL
