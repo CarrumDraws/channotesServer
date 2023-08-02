@@ -25,7 +25,8 @@ router.get("/friends", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let chan_id_a = req.query.chan_id_a;
-    if (!chan_id_a) return res.status(400).send("Missing Parameters");
+    if (!chan_id_a)
+      return res.status(400).send({ response: "Missing Parameters" });
 
     let notes = await pool.query(
       "SELECT id, title, date_edited FROM notes LEFT JOIN shares ON notes.id = shares.note_id WHERE notes.chan_id = ($1) AND shares.chan_id_a = ($2);",
@@ -44,7 +45,8 @@ router.get("/note", verifyToken, async (req, res) => {
   try {
     // let chan_id = req.user.chan_id;
     let note_id = req.query.note_id;
-    if (!note_id) return res.status(400).send("Missing Parameters");
+    if (!note_id)
+      return res.status(400).send({ response: "Missing Parameters" });
 
     let users = await pool.query(
       "SELECT chan_id, first_name, last_name, username, email, url FROM users LEFT JOIN shares ON users.chan_id = shares.chan_id_a WHERE shares.note_id = ($1);",
@@ -68,7 +70,7 @@ router.put("/", verifyToken, async (req, res) => {
     let chan_id = req.user.chan_id;
     let { chan_id_a, note_id } = req.body;
     if (!chan_id_a || !note_id)
-      return res.status(400).send("Missing Parameters");
+      return res.status(400).send({ response: "Missing Parameters" });
 
     // Check if note belongs to you
     let sharable = await pool.query(
@@ -76,7 +78,9 @@ router.put("/", verifyToken, async (req, res) => {
       [chan_id, note_id]
     );
     if (sharable.rows.length == 0)
-      return res.status(400).send("Unauthorized: Not the Note Owner");
+      return res
+        .status(400)
+        .send({ response: "Unauthorized: Not the Note Owner" });
 
     // Checks shares table to see if pair is inside
     let link = await pool.query(
@@ -91,14 +95,14 @@ router.put("/", verifyToken, async (req, res) => {
         "INSERT INTO shares (chan_id_a, note_id) VALUES (($1), ($2));",
         [chan_id_a, note_id]
       );
-      res.send("Shared");
+      res.send({ response: "Shared" });
     } else {
       // Unshare
       await pool.query(
         "DELETE FROM shares WHERE chan_id_a = ($1) AND note_id = ($2);",
         [chan_id_a, note_id]
       );
-      res.send("UnShared");
+      res.send({ response: "UnShared" });
     }
   } catch (err) {
     console.log(err);

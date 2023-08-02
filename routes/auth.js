@@ -9,20 +9,26 @@ const jwt = require("jsonwebtoken");
 router.get("/hasuser", async (req, res) => {
   try {
     const { email, google_id } = req.query;
-    if (!email || !google_id) return res.status(400).send("Missing Data");
+    if (!email || !google_id)
+      return res.status(400).send({ response: "Missing Parameters" });
 
+    // Find User with matching email...
     let user = await pool.query("SELECT * FROM users WHERE email = ($1);", [
       email,
     ]);
-    if (!user.rows.length) return res.status(400).json("Invalid Email");
+    if (!user.rows.length)
+      return res.status(400).send({ response: "User Not Found" });
 
     user = user.rows[0];
+
+    // ...then check if it's google_id matches.
     const isMatch = await bcrypt.compare(google_id, user.google_id);
-    if (!isMatch) return res.status(400).json("Invalid Google ID");
+    if (!isMatch)
+      return res.status(400).send({ response: "Invalid Google ID" });
 
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
     delete user.google_id;
-    res.status(200).json({ token, user });
+    res.status(200).send({ token, user });
   } catch (err) {
     console.log(err);
     res.send(err);

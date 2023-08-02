@@ -40,7 +40,7 @@ router.post("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let { folder_id, title } = req.body;
-    if (!title) return res.status(400).send("Missing Parameters");
+    if (!title) return res.status(400).send({ response: "Missing Parameters" });
 
     if (!folder_id) {
       folder_id = await pool.query(
@@ -73,7 +73,7 @@ router.put("/", verifyToken, async (req, res) => {
     let { title, parent_id } = req.body;
 
     if (!folder_id || !title || !parent_id)
-      return res.status(400).send("Missing Data");
+      return res.status(400).send({ response: "Missing Parameters" });
 
     let folder = await pool.query(
       "UPDATE folders SET title = ($1), folder_id = ($2) WHERE id = ($3) AND chan_id = ($4) RETURNING *;",
@@ -93,13 +93,14 @@ router.delete("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let folder_id = req.query.folder_id;
-    if (!folder_id) return res.status(400).send("Missing Data");
+    if (!folder_id)
+      return res.status(400).send({ response: "Missing Parameters" });
 
     await pool.query(
       "DELETE FROM folders WHERE id = ($1) AND chan_id = ($2);",
       [folder_id, chan_id]
     );
-    res.send("Success");
+    res.send({ response: "Success" });
   } catch (err) {
     console.log(err);
     return res.send(err);

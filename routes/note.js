@@ -8,7 +8,8 @@ router.get("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let note_id = req.query.note_id;
-    if (!note_id) return res.status(400).send("Missing Parameters");
+    if (!note_id)
+      return res.status(400).send({ response: "Missing Parameters" });
 
     let note = await pool.query(
       "SELECT id, title, date_edited, text FROM notes WHERE chan_id = ($1) AND id = ($2);",
@@ -61,7 +62,8 @@ router.put("/", verifyToken, async (req, res) => {
     let chan_id = req.user.chan_id;
     let note_id = req.query.note_id;
     let { title, text } = req.body;
-    if (!note_id || !title) return res.status(400).send("Missing Parameters");
+    if (!note_id || !title)
+      return res.status(400).send({ response: "Missing Parameters" });
 
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
@@ -83,7 +85,8 @@ router.get("/meta", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let note_id = req.query.note_id;
-    if (!note_id) return res.status(400).send("Missing Parameters");
+    if (!note_id)
+      return res.status(400).send({ response: "Missing Parameters" });
 
     let note = await pool.query(
       "SELECT id, folder_id, pinned, locked, password, font_color, background_color FROM notes WHERE chan_id = ($1) AND id = ($2);",
@@ -115,7 +118,7 @@ router.put("/meta", verifyToken, async (req, res) => {
       !font_color ||
       !background_color
     )
-      return res.status(400).send("Missing Parameters");
+      return res.status(400).send({ response: "Missing Parameters" });
 
     // Update Note
     let note = await pool.query(
@@ -146,14 +149,15 @@ router.delete("/", verifyToken, async (req, res) => {
     let chan_id = req.user.chan_id;
     let note_id = req.query.note_id;
     let { folder_id } = req.body;
-    if (!note_id || !folder_id) return res.status(400).send("Missing Data");
+    if (!note_id || !folder_id)
+      return res.status(400).send({ response: "Missing Parameters" });
 
     await pool.query("DELETE FROM notes WHERE id = ($1) AND chan_id = ($2);", [
       note_id,
       chan_id,
     ]);
 
-    res.send("Success");
+    res.send({ response: "Success" });
   } catch (err) {
     console.log(err);
     return res.send(err);

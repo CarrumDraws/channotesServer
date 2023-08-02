@@ -42,6 +42,7 @@ dotenv.config(); // Reading .env files
 // FILE STORAGE EXAMPLES -----
 app.post("/photo", uploads.single("photo"), function (req, res, next) {
   // .single means "One Photo with Key 'photo'"
+  console.log(req.protocol + "://" + req.get("host"));
   console.log(req.file); // File Data
   res.json({ status: "Single File Recieved" });
 });
@@ -70,7 +71,7 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
       !email ||
       !req.file
     )
-      return res.status(400).send("Missing Data");
+      return res.status(400).send({ response: "Missing Data" });
 
     // bcrypt google_id
     const salt = await bcrypt.genSalt();
@@ -79,8 +80,20 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
     // Save User to Postgre
     let user = await pool.query(
       "INSERT INTO users (google_id, first_name, last_name, username, email, url) VALUES (($1), ($2), ($3), ($4), ($5), ($6)) RETURNING *;",
-      [googleHash, first_name, last_name, username, email, req.file.path]
+      [
+        googleHash,
+        first_name,
+        last_name,
+        username,
+        email,
+        req.protocol +
+          "://" +
+          req.get("host") +
+          "/uploads/" +
+          req.file.filename,
+      ]
     );
+    // req.protocol + "://" + req.get("host") + "/uploads
     user = user.rows[0];
 
     // Create Homepage Folder
@@ -105,14 +118,13 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
     let { first_name, last_name, username, email } = req.body;
 
     if (!first_name || !last_name || !username || !email || !req.file)
-      return res.status(400).send("Missing Parameters");
+      return res.status(400).send({ response: "Missing Parameters" });
 
     // Get Old Image URL
     let image = await pool.query(
       "SELECT url FROM users WHERE chan_id = ($1);",
       [chan_id]
     );
-    console.log(image.rows[0].url);
 
     // Delete Old Image
     fs.unlink(image.rows[0].url, (err) => {
@@ -124,7 +136,18 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
     // Update User
     let user = await pool.query(
       "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), email = ($4), url = ($5) WHERE chan_id = ($6) RETURNING *;",
-      [first_name, last_name, username, email, req.file.path, chan_id]
+      [
+        first_name,
+        last_name,
+        username,
+        email,
+        req.protocol +
+          "://" +
+          req.get("host") +
+          "/uploads/" +
+          req.file.filename,
+        chan_id,
+      ]
     );
     delete user.rows[0].google_id;
     res.send(user.rows[0]);
@@ -143,4 +166,4 @@ app.use("/notes", notesRoutes);
 app.use("/shares", sharesRoutes);
 app.use("/users", userRoutes);
 
-app.listen(3000, () => console.log("Server Started at PORT 3000"));
+app.listen(5000, () => console.log("Server Started at PORT 5000"));
