@@ -14,6 +14,7 @@ const bcrypt = require("bcrypt");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const fs = require("fs");
+const jwt = require("jsonwebtoken");
 
 const pool = require("./db.js");
 
@@ -104,7 +105,11 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
       [user.chan_id, null, "Your Folders", time]
     );
 
-    res.send(user);
+    const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
+    delete user.google_id;
+    res.status(200).send({ token, user });
+
+    // res.send(user);
   } catch (err) {
     console.log(err);
     res.send(err);
@@ -114,11 +119,16 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
 // Delete Old Profile Pic + Set New User Data
 app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
   try {
+    console.log("Hit Endpoint!");
     let chan_id = req.user.chan_id;
     let { first_name, last_name, username, email } = req.body;
 
-    if (!first_name || !last_name || !username || !email || !req.file)
+    if (!first_name || !last_name || !username || !email || !req.file) {
+      console.log("Missing Params");
+      console.log(req.body);
+      console.log(req.file);
       return res.status(400).send({ response: "Missing Parameters" });
+    }
 
     // Get Old Image URL
     let image = await pool.query(
