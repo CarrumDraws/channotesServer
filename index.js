@@ -116,17 +116,14 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
   }
 });
 
-// Delete Old Profile Pic + Set New User Data
+// Delete Old Profile Pic + Set New User Data + Return User Data
 app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
   try {
     console.log("Hit Endpoint!");
     let chan_id = req.user.chan_id;
-    let { first_name, last_name, username, email } = req.body;
+    let { first_name, last_name, username } = req.body;
 
-    if (!first_name || !last_name || !username || !email || !req.file) {
-      console.log("Missing Params");
-      console.log(req.body);
-      console.log(req.file);
+    if (!first_name || !last_name || !username) {
       return res.status(400).send({ response: "Missing Parameters" });
     }
 
@@ -135,29 +132,26 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
       "SELECT url FROM users WHERE chan_id = ($1);",
       [chan_id]
     );
+    image = image.rows[0].url;
 
-    // Delete Old Image
-    fs.unlink(image.rows[0].url, (err) => {
-      if (err) {
-        throw err;
-      }
-    });
+    // Delete Old Image + Change URL
+    if (req.file) {
+      const lastPart = image.rows[0].url.split("/").at(-1);
+      fs.unlink(__dirname + "/uploads/" + lastPart, (err) => {
+        console.log("Image Deletion Error");
+      });
+      image =
+        req.protocol +
+        "://" +
+        req.get("host") +
+        "/uploads/" +
+        req.file.filename;
+    }
 
     // Update User
     let user = await pool.query(
-      "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), email = ($4), url = ($5) WHERE chan_id = ($6) RETURNING *;",
-      [
-        first_name,
-        last_name,
-        username,
-        email,
-        req.protocol +
-          "://" +
-          req.get("host") +
-          "/uploads/" +
-          req.file.filename,
-        chan_id,
-      ]
+      "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), url = ($4) WHERE chan_id = ($5) RETURNING *;",
+      [first_name, last_name, username, image, chan_id]
     );
     delete user.rows[0].google_id;
     res.send(user.rows[0]);
