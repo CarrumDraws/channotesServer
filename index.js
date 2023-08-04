@@ -135,12 +135,15 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
       [chan_id]
     );
     image = image.rows[0].image;
+    console.log(image);
 
     // Delete Old Image + Change URL
     if (req.file) {
-      const lastPart = image.rows[0].image.split("/").at(-1);
+      const lastPart = image.split("/").at(-1);
       fs.unlink(__dirname + "/uploads/" + lastPart, (err) => {
-        console.log("Image Deletion Error");
+        if (err) {
+          console.log("Image Deletion Error");
+        }
       });
       image =
         req.protocol +
