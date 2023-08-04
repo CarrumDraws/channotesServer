@@ -26,15 +26,15 @@ router.get("/", verifyToken, async (req, res) => {
 // router.put("/", verifyToken, async (req, res) => {
 //   try {
 //     let chan_id = req.user.chan_id;
-//     let { first_name, last_name, username, email, url } = req.body;
+//     let { first_name, last_name, username, email, image } = req.body;
 
-//     if (!first_name || !last_name || !username || !email || !url)
+//     if (!first_name || !last_name || !username || !email || !image)
 //       return res.status(400).send("Missing Parameters");
 
 //     // Update User
 //     let user = await pool.query(
-//       "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), email = ($4), url = ($5) WHERE chan_id = ($6) RETURNING *;",
-//       [first_name, last_name, username, email, url, chan_id]
+//       "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), email = ($4), image = ($5) WHERE chan_id = ($6) RETURNING *;",
+//       [first_name, last_name, username, email, image, chan_id]
 //     );
 //     delete user.rows[0].google_id;
 //     res.send(user.rows[0]);
@@ -50,7 +50,7 @@ router.get("/friends", verifyToken, async (req, res) => {
     let chan_id = req.user.chan_id;
 
     let user = await pool.query(
-      "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.url FROM users RIGHT JOIN friends ON users.chan_id = friends.chan_id_a WHERE friends.chan_id_b = ($1);",
+      "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.image FROM users RIGHT JOIN friends ON users.chan_id = friends.chan_id_a WHERE friends.chan_id_b = ($1);",
       [chan_id]
     );
     res.send(user.rows);
@@ -112,7 +112,7 @@ router.get("/blocks", verifyToken, async (req, res) => {
     let chan_id = req.user.chan_id;
 
     let user = await pool.query(
-      "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.url FROM users LEFT JOIN blocks ON users.chan_id = blocks.chan_id_a WHERE blocks.chan_id = ($1);",
+      "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.image FROM users LEFT JOIN blocks ON users.chan_id = blocks.chan_id_a WHERE blocks.chan_id = ($1);",
       [chan_id]
     );
     res.send(user.rows);
@@ -177,7 +177,7 @@ router.get("/search", verifyToken, async (req, res) => {
     if (!str) return res.status(400).send({ response: "Missing Parameters" });
     str += "%";
     let users = await pool.query(
-      "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.url FROM users WHERE UPPER(users.username) LIKE UPPER(($1));",
+      "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.image FROM users WHERE UPPER(users.username) LIKE UPPER(($1));",
       [str]
     );
     res.send(users.rows);

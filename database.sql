@@ -8,7 +8,7 @@ CREATE TABLE users (
     last_name VARCHAR(255),
     username VARCHAR(255),
     email VARCHAR(255),
-    url VARCHAR(255)
+    image VARCHAR(255)
 );
 
 CREATE TABLE folders (
@@ -52,7 +52,7 @@ CREATE TABLE notephotos (
         CONSTRAINT fk_note -- Name the Constraint
             FOREIGN KEY (note_id) -- Link...
                 REFERENCES notes(id), -- ...Together.
-    url VARCHAR(255),
+    image VARCHAR(255),
     position VARCHAR(255)
 );
 

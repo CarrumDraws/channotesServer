@@ -15,7 +15,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
-
+const path = require("path");
 const pool = require("./db.js");
 
 // FILE STORAGE -----
@@ -33,6 +33,8 @@ const storage = multer.diskStorage({
   },
 });
 const uploads = multer({ storage: storage });
+// Sets Image Directory
+app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
 // MIDDLEWARE -----
 app.use(express.json()); // Allows access to req.body
@@ -80,7 +82,7 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
 
     // Save User to Postgre
     let user = await pool.query(
-      "INSERT INTO users (google_id, first_name, last_name, username, email, url) VALUES (($1), ($2), ($3), ($4), ($5), ($6)) RETURNING *;",
+      "INSERT INTO users (google_id, first_name, last_name, username, email, image) VALUES (($1), ($2), ($3), ($4), ($5), ($6)) RETURNING *;",
       [
         googleHash,
         first_name,
@@ -129,14 +131,14 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
 
     // Get Old Image URL
     let image = await pool.query(
-      "SELECT url FROM users WHERE chan_id = ($1);",
+      "SELECT image FROM users WHERE chan_id = ($1);",
       [chan_id]
     );
-    image = image.rows[0].url;
+    image = image.rows[0].image;
 
     // Delete Old Image + Change URL
     if (req.file) {
-      const lastPart = image.rows[0].url.split("/").at(-1);
+      const lastPart = image.rows[0].image.split("/").at(-1);
       fs.unlink(__dirname + "/uploads/" + lastPart, (err) => {
         console.log("Image Deletion Error");
       });
@@ -150,7 +152,7 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
 
     // Update User
     let user = await pool.query(
-      "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), url = ($4) WHERE chan_id = ($5) RETURNING *;",
+      "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), image = ($4) WHERE chan_id = ($5) RETURNING *;",
       [first_name, last_name, username, image, chan_id]
     );
     delete user.rows[0].google_id;

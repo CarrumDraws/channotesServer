@@ -49,11 +49,11 @@ router.get("/note", verifyToken, async (req, res) => {
       return res.status(400).send({ response: "Missing Parameters" });
 
     let users = await pool.query(
-      "SELECT chan_id, first_name, last_name, username, email, url FROM users LEFT JOIN shares ON users.chan_id = shares.chan_id_a WHERE shares.note_id = ($1);",
+      "SELECT chan_id, first_name, last_name, username, email, image FROM users LEFT JOIN shares ON users.chan_id = shares.chan_id_a WHERE shares.note_id = ($1);",
       [note_id]
     );
     let owner = await pool.query(
-      "SELECT users.chan_id, first_name, last_name, username, email, url FROM users LEFT JOIN notes ON users.chan_id = notes.chan_id WHERE notes.id = ($1);",
+      "SELECT users.chan_id, first_name, last_name, username, email, image FROM users LEFT JOIN notes ON users.chan_id = notes.chan_id WHERE notes.id = ($1);",
       [note_id]
     );
     users.rows.unshift(owner.rows[0]);
