@@ -17,6 +17,7 @@ const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 const pool = require("./db.js");
+const supabase = require("./supabase.js");
 
 // FILE STORAGE -----
 const multer = require("multer");
@@ -80,38 +81,40 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
     const salt = await bcrypt.genSalt();
     const googleHash = await bcrypt.hash(google_id, salt);
 
-    // Save User to Postgre
-    let user = await pool.query(
-      "INSERT INTO users (google_id, first_name, last_name, username, email, image) VALUES (($1), ($2), ($3), ($4), ($5), ($6)) RETURNING *;",
-      [
-        googleHash,
-        first_name,
-        last_name,
-        username,
-        email,
-        req.protocol +
+    // Save User to Supabase
+    let user = await supabase
+      .from("users") // table to reference
+      .insert({
+        google_id: googleHash,
+        first_name: first_name,
+        last_name: last_name,
+        username: username,
+        email: email,
+        image:
+          req.protocol +
           "://" +
           req.get("host") +
           "/uploads/" +
           req.file.filename,
-      ]
-    );
-    // req.protocol + "://" + req.get("host") + "/uploads
-    user = user.rows[0];
+      }) // command to execute
+      .select(); // .select() returns object
+    if (user.error) throw error; // handle errors like so
+
+    user = user.data[0];
 
     // Create Homepage Folder
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
-    await pool.query(
-      "INSERT INTO folders (chan_id, folder_id, title, date_created) VALUES (($1), ($2), ($3), ($4));",
-      [user.chan_id, null, "Your Folders", time]
-    );
-
+    let folder = await supabase.from("folders").insert({
+      chan_id: user.chan_id,
+      folder_id: null,
+      title: "Your Folders",
+      date_created: time,
+    });
+    if (folder.error) throw error;
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
     delete user.google_id;
     res.status(200).send({ token, user });
-
-    // res.send(user);
   } catch (err) {
     console.log(err);
     res.send(err);

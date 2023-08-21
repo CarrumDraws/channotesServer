@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
+const supabase = require("../supabase.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
@@ -13,13 +14,12 @@ router.get("/hasuser", async (req, res) => {
       return res.status(400).send({ response: "Missing Parameters" });
 
     // Find User with matching email...
-    let user = await pool.query("SELECT * FROM users WHERE email = ($1);", [
-      email,
-    ]);
-    if (!user.rows.length)
+    let user = await supabase.from("users").select().eq("email", email);
+    if (user.error) throw error;
+    if (!user.data.length)
       return res.status(400).send({ response: "User Not Found" });
 
-    user = user.rows[0];
+    user = user.data[0];
 
     // ...then check if it's google_id matches.
     const isMatch = await bcrypt.compare(google_id, user.google_id);

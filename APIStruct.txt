@@ -3,7 +3,7 @@ post("/photo") : Post a photo
 post("/photos") : Post array of photos
 
 // LOGIN ----------
-post("/auth/signup") : Make new user +  Returns {User}
+ > post("/auth/signup") : Make new user +  Returns {User}
 get("/auth/hasuser") [USE FOR AUTH] : Returns {User} + token from google_id. If none found, returns nothing.
 
 // FOLDERS ---------

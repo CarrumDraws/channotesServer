@@ -1,5 +1,6 @@
 const express = require("express");
 const pool = require("../db");
+const supabase = require("../supabase.js");
 const router = express.Router();
 const { verifyToken } = require("../middleware/auth");
 
@@ -10,11 +11,14 @@ router.get("/", verifyToken, async (req, res) => {
     if (!chan_id)
       return res.status(400).send({ response: "Missing Parameters" });
 
-    let user = await pool.query(
-      "SELECT users.*, COUNT(friends.*) AS friends FROM users LEFT JOIN friends ON users.chan_id = friends.chan_id_a WHERE users.chan_id = ($1) GROUP BY users.chan_id;",
-      [chan_id]
-    );
+    // let user = await pool.query(
+    //   "SELECT users.*, COUNT(friends.*) AS friends FROM users LEFT JOIN friends ON users.chan_id = friends.chan_id_a WHERE users.chan_id = ($1) GROUP BY users.chan_id;",
+    //   [chan_id]
+    // );
 
+    // let user = await supabase.from("users").select();
+    // console.log(user);
+    if (user.error) throw error; // handle errors like so
     res.send(user.rows[0]);
   } catch (err) {
     console.log(err);
