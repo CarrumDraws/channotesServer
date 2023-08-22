@@ -4,7 +4,7 @@ post("/photos") : Post array of photos
 
 // LOGIN ----------
  > post("/auth/signup") : Make new user +  Returns {User}
-get("/auth/hasuser") [USE FOR AUTH] : Returns {User} + token from google_id. If none found, returns nothing.
+ > get("/auth/hasuser") [USE FOR AUTH] : Returns {User} + token from google_id. If none found, returns nothing.
 
 // FOLDERS ---------
 get("/folders") : Gets Nested Folders : Queries- folderid : If !folderid then return homepage folders
@@ -32,7 +32,7 @@ put(“/shares”) : Toggles User’s Access to a Shared Note
 
 // USERS ----------
 get("/users") : Gets User Data + Friends Num
-put("/users") : Sets User Data
+> put("/users") : Sets User Data
 
 get("/users/friends") : Gets List of Friends
 put("/users/friends") : Edits Friend: Queries: user_id

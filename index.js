@@ -133,12 +133,17 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
     }
 
     // Get Old Image URL
-    let image = await pool.query(
-      "SELECT image FROM users WHERE chan_id = ($1);",
-      [chan_id]
-    );
-    image = image.rows[0].image;
+    // let image = await pool.query(
+    //   "SELECT image FROM users WHERE chan_id = ($1);",
+    //   [chan_id]
+    // );
+    let image = await supabase
+      .from("users")
+      .select("image")
+      .eq("chan_id", chan_id);
     console.log(image);
+    if (image.error) throw error;
+    image = image.rows[0].image;
 
     // Delete Old Image + Change URL
     if (req.file) {
@@ -157,10 +162,22 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
     }
 
     // Update User
-    let user = await pool.query(
-      "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), image = ($4) WHERE chan_id = ($5) RETURNING *;",
-      [first_name, last_name, username, image, chan_id]
-    );
+    // let user = await pool.query(
+    //   "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), image = ($4) WHERE chan_id = ($5) RETURNING *;",
+    //   [first_name, last_name, username, image, chan_id]
+    // );
+    let user = await supabase
+      .from("users")
+      .update({
+        first_name: first_name,
+        last_name: last_name,
+        username: username,
+        image: image,
+      })
+      .match({ chan_id: chan_id })
+      .select(); // .match vs .eq?
+    console.log(user);
+    if (user.error) throw error;
     delete user.rows[0].google_id;
     res.send(user.rows[0]);
   } catch (err) {
