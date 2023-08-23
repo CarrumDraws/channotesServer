@@ -25,7 +25,6 @@ router.get("/hasuser", async (req, res) => {
     const isMatch = await bcrypt.compare(google_id, user.google_id);
     if (!isMatch)
       return res.status(400).send({ response: "Invalid Google ID" });
-
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
     delete user.google_id;
     res.status(200).send({ token, user });

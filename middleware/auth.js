@@ -1,4 +1,4 @@
-const pool = require("../db");
+const supabase = require("../supabase.js");
 const jwt = require("jsonwebtoken");
 
 // (Authorization): Validate JWT + Sets chan_id in header
@@ -13,10 +13,16 @@ async function verifyToken(req, res, next) {
     const verification = jwt.verify(token, process.env.JWT_SECRET); // Returns decoded chan_id
 
     // Check if chan_id is in DB
-    let user = await pool.query("SELECT * FROM users WHERE chan_id = $1", [
-      verification.chan_id,
-    ]);
-    if (!user.rows.length)
+    // let user = await pool.query("SELECT * FROM users WHERE chan_id = $1", [
+    //   verification.chan_id,
+    // ]);
+    let user = await supabase
+      .from("users")
+      .select()
+      .eq("chan_id", verification.chan_id);
+    console.log(user);
+    if (user.error) throw error;
+    if (!user.data.length)
       return res.status(403).send({ response: "Invalid Bearer Token " });
     req.user = verification; // Set request data, so the next middleware can read it
     next();
