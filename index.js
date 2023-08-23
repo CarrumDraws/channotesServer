@@ -124,7 +124,6 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
 // Delete Old Profile Pic + Set New User Data + Return User Data
 app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
   try {
-    console.log("Hit Endpoint!");
     let chan_id = req.user.chan_id;
     let { first_name, last_name, username } = req.body;
 
@@ -141,16 +140,16 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
       .from("users")
       .select("image")
       .eq("chan_id", chan_id);
-    console.log(image);
     if (image.error) throw error;
-    image = image.rows[0].image;
+    image = image.data[0].image;
 
     // Delete Old Image + Change URL
     if (req.file) {
       const lastPart = image.split("/").at(-1);
       fs.unlink(__dirname + "/uploads/" + lastPart, (err) => {
         if (err) {
-          console.log("Image Deletion Error");
+          console.log("Image Deletion Error: ");
+          console.log(err);
         }
       });
       image =
@@ -176,10 +175,9 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
       })
       .match({ chan_id: chan_id })
       .select(); // .match vs .eq?
-    console.log(user);
     if (user.error) throw error;
-    delete user.rows[0].google_id;
-    res.send(user.rows[0]);
+    delete user.data[0].google_id;
+    res.send(user.data[0]);
   } catch (err) {
     console.log(err);
     return res.send(err);

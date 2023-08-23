@@ -20,7 +20,6 @@ async function verifyToken(req, res, next) {
       .from("users")
       .select()
       .eq("chan_id", verification.chan_id);
-    console.log(user);
     if (user.error) throw error;
     if (!user.data.length)
       return res.status(403).send({ response: "Invalid Bearer Token " });
