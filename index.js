@@ -16,7 +16,6 @@ const dotenv = require("dotenv");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
-const pool = require("./db.js");
 const supabase = require("./supabase.js");
 
 // FILE STORAGE -----
@@ -82,34 +81,30 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
     const googleHash = await bcrypt.hash(google_id, salt);
 
     // Save User to Supabase
-    let user = await supabase
-      .from("users") // table to reference
-      .insert({
-        google_id: googleHash,
-        first_name: first_name,
-        last_name: last_name,
-        username: username,
-        email: email,
-        image:
-          req.protocol +
-          "://" +
-          req.get("host") +
-          "/uploads/" +
-          req.file.filename,
-      }) // command to execute
-      .select(); // .select() returns object
+    let user = await supabase.rpc("signup", {
+      google_id_input: googleHash,
+      first_name_input: first_name,
+      last_name_input: last_name,
+      username_input: username,
+      email_input: email,
+      image_input:
+        req.protocol +
+        "://" +
+        req.get("host") +
+        "/uploads/" +
+        req.file.filename,
+    });
     if (user.error) throw error; // handle errors like so
-
-    user = user.data[0];
+    user = user.data;
 
     // Create Homepage Folder
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
-    let folder = await supabase.from("folders").insert({
-      chan_id: user.chan_id,
-      folder_id: null,
-      title: "Your Folders",
-      date_created: time,
+    let folder = await supabase.rpc("signup_newfolder", {
+      chan_id_input: user.chan_id,
+      folder_id_input: null,
+      title_input: "Your Folders",
+      date_created_input: time,
     });
     if (folder.error) throw error;
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
@@ -132,16 +127,11 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
     }
 
     // Get Old Image URL
-    // let image = await pool.query(
-    //   "SELECT image FROM users WHERE chan_id = ($1);",
-    //   [chan_id]
-    // );
-    let image = await supabase
-      .from("users")
-      .select("image")
-      .eq("chan_id", chan_id);
+    let image = await supabase.rpc("setuser_image", {
+      chan_id_input: chan_id,
+    });
     if (image.error) throw error;
-    image = image.data[0].image;
+    image = image.data;
 
     // Delete Old Image + Change URL
     if (req.file) {
@@ -161,23 +151,16 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
     }
 
     // Update User
-    // let user = await pool.query(
-    //   "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), image = ($4) WHERE chan_id = ($5) RETURNING *;",
-    //   [first_name, last_name, username, image, chan_id]
-    // );
-    let user = await supabase
-      .from("users")
-      .update({
-        first_name: first_name,
-        last_name: last_name,
-        username: username,
-        image: image,
-      })
-      .match({ chan_id: chan_id })
-      .select(); // .match vs .eq?
+    let user = await supabase.rpc("setuser", {
+      first_name_input: first_name,
+      last_name_input: last_name,
+      username_input: username,
+      image_input: image,
+      chan_id_input: chan_id,
+    });
     if (user.error) throw error;
-    delete user.data[0].google_id;
-    res.send(user.data[0]);
+    delete user.data.google_id;
+    res.send(user.data);
   } catch (err) {
     console.log(err);
     return res.send(err);

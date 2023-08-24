@@ -16,7 +16,7 @@ router.get("/", verifyToken, async (req, res) => {
     //   [chan_id]
     // );
 
-    // let user = await supabase.from("users").select();
+    // let user = await supabase.from("users").select(*, );
     // console.log(user);
     if (user.error) throw error; // handle errors like so
     res.send(user.rows[0]);
@@ -26,38 +26,24 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
-// Sets User Data
-// router.put("/", verifyToken, async (req, res) => {
-//   try {
-//     let chan_id = req.user.chan_id;
-//     let { first_name, last_name, username, email, image } = req.body;
-
-//     if (!first_name || !last_name || !username || !email || !image)
-//       return res.status(400).send("Missing Parameters");
-
-//     // Update User
-//     let user = await pool.query(
-//       "UPDATE users SET first_name = ($1), last_name = ($2), username = ($3), email = ($4), image = ($5) WHERE chan_id = ($6) RETURNING *;",
-//       [first_name, last_name, username, email, image, chan_id]
-//     );
-//     delete user.rows[0].google_id;
-//     res.send(user.rows[0]);
-//   } catch (err) {
-//     console.log(err);
-//     return res.send(err);
-//   }
-// });
-
 // Gets List of Friends
 router.get("/friends", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
 
-    let user = await pool.query(
-      "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.image FROM users RIGHT JOIN friends ON users.chan_id = friends.chan_id_a WHERE friends.chan_id_b = ($1);",
-      [chan_id]
-    );
-    res.send(user.rows);
+    // let user = await pool.query(
+    //   "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.image FROM users RIGHT JOIN friends ON users.chan_id = friends.chan_id_a WHERE friends.chan_id_b = ($1);",
+    //   [chan_id]
+    // );
+    let user = await supabase
+      .from("users")
+      .select(
+        `chan_id, first_name, last_name, username, email, image, friends (chan_id_a)`
+      )
+      .eq("friends.chan_id_b", chan_id);
+
+    console.log(user);
+    res.send(user.data);
   } catch (err) {
     console.log(err);
     return res.send(err);
