@@ -11,15 +11,13 @@ router.get("/", verifyToken, async (req, res) => {
     if (!chan_id)
       return res.status(400).send({ response: "Missing Parameters" });
 
-    // let user = await pool.query(
-    //   "SELECT users.*, COUNT(friends.*) AS friends FROM users LEFT JOIN friends ON users.chan_id = friends.chan_id_a WHERE users.chan_id = ($1) GROUP BY users.chan_id;",
-    //   [chan_id]
-    // );
-
-    // let user = await supabase.from("users").select(*, );
-    // console.log(user);
-    if (user.error) throw error; // handle errors like so
-    res.send(user.rows[0]);
+    let user = await supabase.rpc("getuser", {
+      chan_id_input: chan_id,
+    });
+    if (user.error) throw error;
+    user = user.data[0];
+    delete user.google_id;
+    res.send(user);
   } catch (err) {
     console.log(err);
     return res.send(err);

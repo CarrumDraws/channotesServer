@@ -7,7 +7,7 @@ post("/photos") : Post array of photos
  > get("/auth/hasuser") [USE FOR AUTH] : Returns {User} + token from google_id. If none found, returns nothing.
 
 // USERS ----------
-get("/users") : Gets User Data + Friends Num
+> get("/users") : Gets User Data + Friends Num
 > put("/users") : Sets User Data
 
 get("/users/friends") : Gets List of Friends
