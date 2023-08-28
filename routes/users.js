@@ -14,7 +14,7 @@ router.get("/", verifyToken, async (req, res) => {
     let user = await supabase.rpc("getuser", {
       chan_id_input: chan_id,
     });
-    if (user.error) throw error;
+    if (user.error) throw user.error;
     user = user.data[0];
     delete user.google_id;
     res.send(user);
@@ -28,20 +28,12 @@ router.get("/", verifyToken, async (req, res) => {
 router.get("/friends", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
-
-    // let user = await pool.query(
-    //   "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.image FROM users RIGHT JOIN friends ON users.chan_id = friends.chan_id_a WHERE friends.chan_id_b = ($1);",
-    //   [chan_id]
-    // );
-    let user = await supabase
-      .from("users")
-      .select(
-        `chan_id, first_name, last_name, username, email, image, friends (chan_id_a)`
-      )
-      .eq("friends.chan_id_b", chan_id);
-
-    console.log(user);
-    res.send(user.data);
+    let friends = await supabase.rpc("getfriends", {
+      chan_id_input: chan_id,
+    });
+    console.log(friends);
+    if (friends.error) throw friends.error;
+    res.send(friends.data);
   } catch (err) {
     console.log(err);
     return res.send(err);
@@ -49,6 +41,7 @@ router.get("/friends", verifyToken, async (req, res) => {
 });
 
 // Edits Friend: Friends/Unfriends
+// NOTE: For extra safely, should check that neither party has one another blocked...
 router.put("/friends", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
@@ -59,33 +52,36 @@ router.put("/friends", verifyToken, async (req, res) => {
       return res.status(400).send({ response: "Repeated Parameters" });
 
     // Checks friends table to see if pair is inside
-    let link = await pool.query(
-      "SELECT * FROM friends WHERE chan_id_a = ($1) AND chan_id_b = ($2);",
-      [chan_id, user_id]
-    );
-    link = link.rows;
-
-    if (link.length == 0) {
+    let isFriend = await supabase.rpc("checkfriend", {
+      chan_id_input: chan_id,
+      user_id_input: user_id,
+    });
+    if (isFriend.error) throw isFriend.error;
+    if (isFriend.data.length == 0) {
       // Make Friends :)
-      await pool.query(
-        "INSERT INTO friends (chan_id_a, chan_id_b) VALUES (($1), ($2));",
-        [chan_id, user_id]
-      );
-      await pool.query(
-        "INSERT INTO friends (chan_id_a, chan_id_b) VALUES (($1), ($2));",
-        [user_id, chan_id]
-      );
+      let newfriend = await supabase.rpc("makefriend", {
+        chan_id_a_input: chan_id,
+        chan_id_b_input: user_id,
+      });
+      if (newfriend.error) throw newfriend.error;
+      newfriend = await supabase.rpc("makefriend", {
+        chan_id_a_input: user_id,
+        chan_id_b_input: chan_id,
+      });
+      if (newfriend.error) throw newfriend.error;
       res.send({ response: "New Friend" });
     } else {
       // End Friends :(
-      await pool.query(
-        "DELETE FROM friends WHERE chan_id_a = ($1) AND chan_id_b = ($2);",
-        [chan_id, user_id]
-      );
-      await pool.query(
-        "DELETE FROM friends WHERE chan_id_a = ($1) AND chan_id_b = ($2);",
-        [user_id, chan_id]
-      );
+      let oldfriend = await supabase.rpc("deletefriend", {
+        chan_id_a_input: chan_id,
+        chan_id_b_input: user_id,
+      });
+      if (oldfriend.error) throw oldfriend.error;
+      oldfriend = await supabase.rpc("deletefriend", {
+        chan_id_a_input: user_id,
+        chan_id_b_input: chan_id,
+      });
+      if (oldfriend.error) throw oldfriend.error;
       res.send({ response: "Unfriended" });
     }
   } catch (err) {
@@ -99,11 +95,15 @@ router.get("/blocks", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
 
-    let user = await pool.query(
-      "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.image FROM users LEFT JOIN blocks ON users.chan_id = blocks.chan_id_a WHERE blocks.chan_id = ($1);",
-      [chan_id]
-    );
-    res.send(user.rows);
+    // let block = await pool.query(
+    //   "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.image FROM users LEFT JOIN blocks ON users.chan_id = blocks.chan_id_a WHERE blocks.chan_id = ($1);",
+    //   [chan_id]
+    // );
+    let block = await supabase.rpc("getblocks", {
+      chan_id_input: chan_id,
+    });
+    console.log(block);
+    res.send(block.data);
   } catch (err) {
     console.log(err);
     return res.send(err);
@@ -121,34 +121,38 @@ router.put("/blocks", verifyToken, async (req, res) => {
       return res.status(400).send({ response: "Repeated Parameters" });
 
     // Checks blocks table to see if pair is inside
-    let link = await pool.query(
-      "SELECT * FROM blocks WHERE chan_id = ($1) AND chan_id_a = ($2);",
-      [chan_id, user_id]
-    );
-    link = link.rows;
-
-    if (link.length == 0) {
+    let isBlocked = await supabase.rpc("checkblock", {
+      chan_id_input: chan_id,
+      user_id_input: user_id,
+    });
+    console.log(isBlocked);
+    if (isBlocked.error) throw isBlocked.error;
+    if (isBlocked.data.length == 0) {
       // Block :(
-      await pool.query(
-        "INSERT INTO blocks (chan_id, chan_id_a) VALUES (($1), ($2));",
-        [chan_id, user_id]
-      );
+      let block = await supabase.rpc("block", {
+        chan_id_input: chan_id,
+        user_id_input: user_id,
+      });
+      if (block.error) throw block.error;
       // Remove Friend
-      await pool.query(
-        "DELETE FROM friends WHERE chan_id_a = ($1) AND chan_id_b = ($2);",
-        [chan_id, user_id]
-      );
-      await pool.query(
-        "DELETE FROM friends WHERE chan_id_a = ($1) AND chan_id_b = ($2);",
-        [user_id, chan_id]
-      );
+      let oldfriend = await supabase.rpc("deletefriend", {
+        chan_id_a_input: chan_id,
+        chan_id_b_input: user_id,
+      });
+      if (oldfriend.error) throw oldfriend.error;
+      oldfriend = await supabase.rpc("deletefriend", {
+        chan_id_a_input: user_id,
+        chan_id_b_input: chan_id,
+      });
+      if (oldfriend.error) throw oldfriend.error;
       res.send({ response: "Blocked" });
     } else {
       // UnBlock :)
-      await pool.query(
-        "DELETE FROM blocks WHERE chan_id = ($1) AND chan_id_a = ($2);",
-        [chan_id, user_id]
-      );
+      let unblock = await supabase.rpc("unblock", {
+        chan_id_input: chan_id,
+        user_id_input: user_id,
+      });
+      if (unblock.error) throw unblock.error;
       res.send({ response: "UnBlocked" });
     }
   } catch (err) {
@@ -157,18 +161,20 @@ router.put("/blocks", verifyToken, async (req, res) => {
   }
 });
 
-// Queries: name
+// Queries: username_search
+// NOTE: Make sure blocked users are excluded!
 router.get("/search", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
-    let str = req.query.search;
-    if (!str) return res.status(400).send({ response: "Missing Parameters" });
-    str += "%";
-    let users = await pool.query(
-      "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.image FROM users WHERE UPPER(users.username) LIKE UPPER(($1));",
-      [str]
-    );
-    res.send(users.rows);
+    let username = req.query.username_search;
+    if (!username)
+      return res.status(400).send({ response: "Missing Parameters" });
+    username += "%";
+    let users = await supabase.rpc("search", {
+      username_input: username,
+    });
+    if (users.error) throw users.error;
+    res.send(users.data);
   } catch (err) {
     console.log(err);
     return res.send(err);

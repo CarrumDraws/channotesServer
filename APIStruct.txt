@@ -10,13 +10,13 @@ post("/photos") : Post array of photos
 > get("/users") : Gets User Data + Friends Num
 > put("/users") : Sets User Data
 
-get("/users/friends") : Gets List of Friends
-put("/users/friends") : Edits Friend: Queries: user_id
+> get("/users/friends") : Gets List of Friends
+> put("/users/friends") : Edits Friend: Queries: user_id
 
-get("/users/blocks") : Gets List of Blocks
-put("/users/blocks") : Edits Block: Queries: user_id
+> get("/users/blocks") : Gets List of Blocks
+> put("/users/blocks") : Edits Block: Queries: user_id
 
-get("/users/search") : Queries: name
+> get("/users/search") : Queries: name
 
 // FOLDERS ---------
 get("/folders") : Gets Nested Folders : Queries- folderid : If !folderid then return homepage folders
