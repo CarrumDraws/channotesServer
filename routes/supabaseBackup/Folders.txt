@@ -1,0 +1,71 @@
+create or replace function getfolder(chan_id_input uuid, folder_id_input uuid)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid,
+    title varchar,
+    date_created timestamp,
+    notes int) 
+language sql
+as $$
+  SELECT folders.id, folders.chan_id, folders.folder_id, folders.title, folders.date_created, COUNT(notes.*) AS notes FROM folders LEFT JOIN notes ON folders.id = notes.folder_id WHERE folders.id = folder_id_input AND folders.chan_id = chan_id_input GROUP BY folders.id;
+$$;
+
+create or replace function getfolderhome(chan_id_input uuid)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid,
+    title varchar,
+    date_created timestamp,
+    notes int) 
+language sql
+as $$
+  -- SELECT id, chan_id, folder_id, title, date_created FROM folders WHERE folder_id IS NULL AND chan_id = chan_id_input;
+  SELECT folders.id, folders.chan_id, folders.folder_id, folders.title, folders.date_created, COUNT(notes.*) AS notes FROM folders LEFT JOIN notes ON folders.id = notes.folder_id WHERE folders.folder_id IS NULL AND folders.chan_id = chan_id_input GROUP BY folders.id;
+$$;
+
+create or replace function getfolders(folder_id_input uuid)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid,
+    title varchar,
+    date_created timestamp,
+    notes int
+    ) 
+language sql
+as $$
+  SELECT folders.*, COUNT(notes.*) AS notes FROM folders LEFT JOIN notes ON folders.id = notes.folder_id WHERE folders.folder_id = folder_id_input GROUP BY folders.id;
+$$;
+
+create or replace function newfolder(chan_id_input uuid, folder_id_input uuid, title_input varchar, time_input timestamp)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid,
+    title varchar,
+    date_created timestamp)
+language sql
+as $$
+  INSERT INTO folders (chan_id, folder_id, title, date_created) VALUES (chan_id_input, folder_id_input, title_input, time_input) RETURNING id, chan_id, folder_id, title, date_created;
+$$;
+
+create or replace function editfolder(chan_id_input uuid, folder_id_input uuid, parent_id_input uuid, title_input varchar)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid,
+    title varchar,
+    date_created timestamp)
+language sql
+as $$
+  UPDATE folders SET title = title_input, folder_id = parent_id_input WHERE id = folder_id_input AND chan_id = chan_id_input RETURNING id, chan_id, folder_id, title, date_created;
+$$;
+
+create or replace function deletefolder(chan_id_input uuid, folder_id_input uuid)
+returns void
+language sql
+as $$
+  DELETE FROM folders WHERE id = folder_id_input AND chan_id = chan_id_input;
+$$;

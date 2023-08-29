@@ -1,0 +1,93 @@
+create or replace function getsharedwithyou(chan_id_input uuid)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid, 
+    title varchar,
+    date_created timestamp,
+    date_edited timestamp,
+    pinned bool,
+    locked bool,
+    password varchar,
+    font_color varchar,
+    background_color varchar
+    ) 
+language sql
+as $$
+  SELECT notes.id, notes.chan_id, notes.folder_id, notes.title, notes.date_created, notes.date_edited, notes.pinned, notes.locked, notes.password, notes.font_color, notes.background_color FROM notes LEFT JOIN shares ON notes.id = shares.note_id WHERE shares.chan_id_a = chan_id_input;
+$$;
+
+create or replace function getsharedwithfriend(chan_id_input uuid, chan_id_a_input uuid)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid, 
+    title varchar,
+    date_created timestamp,
+    date_edited timestamp,
+    pinned bool,
+    locked bool,
+    password varchar,
+    font_color varchar,
+    background_color varchar
+)
+language sql
+as $$
+  SELECT notes.id, notes.chan_id, notes.folder_id, notes.title, notes.date_created, notes.date_edited, notes.pinned, notes.locked, notes.password, notes.font_color, notes.background_color FROM notes LEFT JOIN shares ON notes.id = shares.note_id WHERE notes.chan_id = chan_id_input AND shares.chan_id_a = chan_id_a_input;
+$$;
+
+create or replace function getshares(note_id_input uuid)
+returns table( -- Return sets of custom data like so
+    chan_id uuid,
+    first_name varchar,
+    last_name varchar,
+    username varchar,
+    email varchar,
+    image varchar)
+language sql
+as $$
+  SELECT chan_id, first_name, last_name, username, email, image FROM users LEFT JOIN shares ON users.chan_id = shares.chan_id_a WHERE shares.note_id = note_id_input;
+$$;
+
+create or replace function getowner(note_id_input uuid)
+returns table( -- Return sets of custom data like so
+    chan_id uuid,
+    first_name varchar,
+    last_name varchar,
+    username varchar,
+    email varchar,
+    image varchar)
+language sql
+as $$
+  SELECT users.chan_id, first_name, last_name, username, email, image FROM users LEFT JOIN notes ON users.chan_id = notes.chan_id WHERE notes.id = note_id_input;
+$$;
+
+create or replace function checkshared(chan_id_a_input uuid, note_id_input uuid)
+returns table(
+  chan_id_a uuid,
+  note_id uuid
+)
+language sql
+as $$
+  SELECT chan_id_a, note_id FROM shares WHERE chan_id_a = chan_id_a_input AND note_id = note_id_input;
+$$;
+
+create or replace function share(chan_id_a_input uuid, note_id_input uuid)
+returns table(
+  chan_id_a uuid,
+  note_id uuid
+)
+language sql
+as $$
+  INSERT INTO shares ( note_id, chan_id_a) VALUES (note_id_input, chan_id_a_input) RETURNING chan_id_a, note_id;
+$$;
+
+create or replace function unshare(chan_id_a_input uuid, note_id_input uuid)
+returns table(
+  chan_id_a uuid,
+  note_id uuid
+)
+language sql
+as $$
+  DELETE FROM shares WHERE chan_id_a = chan_id_a_input AND note_id = note_id_input RETURNING chan_id_a, note_id;
+$$;

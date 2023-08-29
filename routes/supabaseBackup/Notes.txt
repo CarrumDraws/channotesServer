@@ -1,0 +1,118 @@
+create or replace function getnotes(chan_id_input uuid, folder_id_input uuid)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid, 
+    title varchar,
+    date_created timestamp,
+    date_edited timestamp,
+    pinned bool,
+    locked bool,
+    password varchar,
+    font_color varchar,
+    background_color varchar
+    ) 
+language sql
+as $$
+  SELECT id, chan_id, folder_id, title, date_created, date_edited, pinned, locked, password, font_color, background_color FROM notes WHERE chan_id = chan_id_input AND folder_id = folder_id_input;
+$$;
+
+create or replace function getnote(chan_id_input uuid, note_id_input uuid)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid, 
+    title varchar,
+    date_created timestamp,
+    date_edited timestamp,
+    text text,
+    font_color varchar,
+    background_color varchar
+    ) 
+language sql
+as $$
+  SELECT id, chan_id, folder_id, title, date_created, date_edited, text, font_color, background_color FROM notes WHERE chan_id = chan_id_input AND id = note_id_input;
+$$;
+
+create or replace function newnote(chan_id_input uuid, folder_id_input uuid, title_input varchar, time_input timestamp)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid,
+    title varchar,
+    date_created timestamp,
+    date_edited timestamp,
+    text text,
+    pinned bool,
+    locked bool,
+    password varchar,
+    font_color varchar,
+    background_color varchar
+    )
+language sql
+as $$
+  INSERT INTO notes (chan_id, folder_id, title, date_created, date_edited) VALUES (chan_id_input, folder_id_input, title_input, time_input, time_input) RETURNING id, chan_id, folder_id, title, date_created, date_edited, text, pinned, locked, password, font_color, background_color;
+$$;
+
+create or replace function editnote(chan_id_input uuid, note_id_input uuid, time_input timestamp, text_input text, title_input varchar)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid,
+    title varchar,
+    date_created timestamp,
+    date_edited timestamp,
+    text text,
+    pinned bool,
+    locked bool,
+    password varchar,
+    font_color varchar,
+    background_color varchar
+    )
+language sql
+as $$
+  UPDATE notes SET title = title_input, text = text_input, date_edited = time_input WHERE chan_id = chan_id_input AND id = note_id_input RETURNING id, chan_id, folder_id, title, date_created, date_edited, text, pinned, locked, password, font_color, background_color;
+$$;
+
+create or replace function getnotemeta(chan_id_input uuid, note_id_input uuid)
+returns table(
+    id uuid,
+    folder_id uuid, 
+    title varchar,
+    pinned bool,
+    locked bool,
+    password varchar,
+    date_created timestamp,
+    date_edited timestamp,
+    font_color varchar,
+    background_color varchar
+    ) 
+language sql
+as $$
+  SELECT id, folder_id, title, pinned, locked, password, date_created, date_edited, font_color, background_color FROM notes WHERE chan_id = chan_id_input AND id = note_id_input;
+$$;
+
+create or replace function editnotemeta(chan_id_input uuid, note_id_input uuid, folder_id_input uuid, pinned_input bool, locked_input bool, password_input varchar, font_color_input varchar, background_color_input varchar)
+returns table(
+    id uuid,
+    folder_id uuid, 
+    title varchar,
+    pinned bool,
+    locked bool,
+    password varchar,
+    date_created timestamp,
+    date_edited timestamp,
+    font_color varchar,
+    background_color varchar
+    )
+language sql
+as $$
+  UPDATE notes SET folder_id = folder_id_input, pinned = pinned_input, locked = locked_input, password = password_input, font_color = font_color_input, background_color = background_color_input WHERE chan_id = chan_id_input AND id = note_id_input RETURNING id, folder_id, title, pinned, locked, password, date_created, date_edited, font_color, background_color;
+$$;
+
+create or replace function deletenote(chan_id_input uuid, note_id_input uuid)
+returns void
+language sql
+as $$
+  DELETE FROM notes WHERE id = note_id_input AND chan_id = chan_id_input;
+$$;
