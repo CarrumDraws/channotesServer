@@ -1,5 +1,6 @@
 const express = require("express");
 const pool = require("../db");
+const supabase = require("../supabase.js");
 const router = express.Router();
 const { verifyToken } = require("../middleware/auth");
 
@@ -11,12 +12,13 @@ router.get("/", verifyToken, async (req, res) => {
     if (!note_id)
       return res.status(400).send({ response: "Missing Parameters" });
 
-    let note = await pool.query(
-      "SELECT id, title, date_edited, text FROM notes WHERE chan_id = ($1) AND id = ($2);",
-      [chan_id, note_id]
-    );
+    let note = await supabase.rpc("getnote", {
+      chan_id_input: chan_id,
+      note_id_input: note_id,
+    });
+    if (note.error) throw note.error;
 
-    res.send(note.rows[0]);
+    res.send(note.data[0]);
   } catch (err) {
     console.log(err);
     return res.send(err);
@@ -25,31 +27,33 @@ router.get("/", verifyToken, async (req, res) => {
 
 // Create New Note w/ folder_id
 // If !folder_id then put in Home Folder.
-// Adds +1 to folder_id's 'notes' val
 router.post("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let { folder_id } = req.body;
 
-    // If no folder_id, use ID of your Home Folder
+    // If no folder_id, get ID of your Home Folder
     if (!folder_id) {
-      folder_id = await pool.query(
-        "SELECT * FROM folders WHERE folder_id IS NULL AND chan_id = ($1);",
-        [chan_id]
-      );
-      folder_id = folder_id.rows[0].id;
+      let homefolder = await supabase.rpc("getfolderhome", {
+        chan_id_input: chan_id,
+      });
+      if (homefolder.error) throw homefolder.error;
+      folder_id = homefolder.data[0].id;
     }
 
     // Insert New Note in Folder
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
-    let note = await pool.query(
-      "INSERT INTO notes (chan_id, folder_id, title, date_created, date_edited) VALUES (($1), ($2), ($3), ($4), ($5)) RETURNING *;",
-      [chan_id, folder_id, "New Note", time, time]
-    );
+    let note = await supabase.rpc("newnote", {
+      chan_id_input: chan_id,
+      folder_id_input: folder_id,
+      title_input: "New Note",
+      time_input: time,
+    });
+    if (note.error) throw note.error;
 
     // delete note.rows[0].chan_id;
-    res.send(note.rows[0]);
+    res.send(note.data[0]);
   } catch (err) {
     console.log(err);
     return res.send(err);
@@ -67,13 +71,17 @@ router.put("/", verifyToken, async (req, res) => {
 
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
-    let note = await pool.query(
-      "UPDATE notes SET title = ($1), text = ($2), date_edited = ($3) WHERE chan_id = ($4) AND id = ($5) RETURNING *;",
-      [title, text, time, chan_id, note_id]
-    );
+    let note = await supabase.rpc("editnote", {
+      chan_id_input: chan_id,
+      note_id_input: note_id,
+      text_input: text,
+      title_input: title,
+      time_input: time,
+    });
+    if (note.error) throw note.error;
 
     // delete note.rows[0].chan_id;
-    res.send(note.rows[0]);
+    res.send(note.data[0]);
   } catch (err) {
     console.log(err);
     return res.send(err);
@@ -87,14 +95,12 @@ router.get("/meta", verifyToken, async (req, res) => {
     let note_id = req.query.note_id;
     if (!note_id)
       return res.status(400).send({ response: "Missing Parameters" });
-
-    let note = await pool.query(
-      "SELECT id, folder_id, pinned, locked, password, font_color, background_color FROM notes WHERE chan_id = ($1) AND id = ($2);",
-      [chan_id, note_id]
-    );
-
-    console.log(note);
-    res.send(note.rows[0]);
+    let note = await supabase.rpc("getnotemeta", {
+      chan_id_input: chan_id,
+      note_id_input: note_id,
+    });
+    if (note.error) throw note.error;
+    res.send(note.data[0]);
   } catch (err) {
     console.log(err);
     return res.send(err);
@@ -121,22 +127,20 @@ router.put("/meta", verifyToken, async (req, res) => {
       return res.status(400).send({ response: "Missing Parameters" });
 
     // Update Note
-    let note = await pool.query(
-      "UPDATE notes SET folder_id = ($1), pinned = ($2), locked = ($3), password = ($4), font_color = ($5), background_color = ($6) WHERE chan_id = ($7) AND id = ($8) RETURNING id, folder_id, pinned, locked, password, font_color, background_color;",
-      [
-        folder_id,
-        pinned,
-        locked,
-        password,
-        font_color,
-        background_color,
-        chan_id,
-        note_id,
-      ]
-    );
+    let note = await supabase.rpc("editnotemeta", {
+      chan_id_input: chan_id,
+      note_id_input: note_id,
+      folder_id_input: folder_id,
+      pinned_input: pinned,
+      locked_input: locked,
+      password_input: password,
+      font_color_input: font_color,
+      background_color_input: background_color,
+    });
+    if (note.error) throw note.error;
 
     // delete note.rows[0].chan_id;
-    res.send(note.rows[0]);
+    res.send(note.data[0]);
   } catch (err) {
     console.log(err);
     return res.send(err);
@@ -148,15 +152,14 @@ router.delete("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let note_id = req.query.note_id;
-    let { folder_id } = req.body;
-    if (!note_id || !folder_id)
+    if (!note_id)
       return res.status(400).send({ response: "Missing Parameters" });
-
-    await pool.query("DELETE FROM notes WHERE id = ($1) AND chan_id = ($2);", [
-      note_id,
-      chan_id,
-    ]);
-
+    let note = await supabase.rpc("deletenote", {
+      chan_id_input: chan_id,
+      note_id_input: note_id,
+    });
+    console.log(note);
+    if (note.error) throw note.error;
     res.send({ response: "Success" });
   } catch (err) {
     console.log(err);

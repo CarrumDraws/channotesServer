@@ -1,5 +1,5 @@
 const express = require("express");
-const pool = require("../db");
+const supabase = require("../supabase.js");
 const router = express.Router();
 const { verifyToken } = require("../middleware/auth");
 
@@ -12,23 +12,22 @@ router.get("/", verifyToken, async (req, res) => {
 
     // If no folder_id, get ID of your Home Folder
     if (!folder_id) {
-      folder_id = await pool.query(
-        "SELECT * FROM folders WHERE folder_id IS NULL AND chan_id = ($1);",
-        [chan_id]
-      );
-      folder_id = folder_id.rows[0].id;
+      let homefolder = await supabase.rpc("getfolderhome", {
+        chan_id_input: chan_id,
+      });
+      if (homefolder.error) throw homefolder.error;
+      folder_id = homefolder.data[0].id;
     }
 
     // Find Child Notes
-    let notes = await pool.query(
-      "SELECT id, title, date_created, date_edited, locked FROM notes WHERE chan_id = ($1) AND folder_id = ($2);",
-      [chan_id, folder_id]
-    );
-
+    let notes = await supabase.rpc("getnotes", {
+      chan_id_input: chan_id,
+      folder_id_input: folder_id,
+    });
     // for (let note of notes.rows) {
     //   delete note.chan_id;
     // }
-    res.send(notes.rows);
+    res.send(notes.data);
   } catch (err) {
     console.log(err);
     return res.send(err);
