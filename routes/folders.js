@@ -1,33 +1,37 @@
 const express = require("express");
-const pool = require("../db");
+const supabase = require("../supabase.js");
 const router = express.Router();
 const { verifyToken } = require("../middleware/auth");
 
-// Gets Homepage/Nested Folders. If no ':folderid,' get homepage folders.
+// Gets Folder Data + Nested Folders. If no ':folderid,' use Homepage Folder.
 router.get("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let folder_id = req.query.folder_id;
+    let folderdata;
 
-    // If no folder_id, get ID of your Home Folder
+    // Get Folder Data of folder_id. If no folder_id, get ID of Home Folder
     if (!folder_id) {
-      folder_id = await pool.query(
-        "SELECT * FROM folders WHERE folder_id IS NULL AND chan_id = ($1);",
-        [chan_id]
-      );
-      folder_id = folder_id.rows[0].id;
+      folderdata = await supabase.rpc("getfolderhome", {
+        chan_id_input: chan_id,
+      });
+    } else {
+      folderdata = await supabase.rpc("getfolder", {
+        chan_id_input: chan_id,
+        folder_id_input: folder_id,
+      });
     }
+    if (folderdata.error) throw folderdata.error;
 
     // Find Child Folders
-    let folders = await pool.query(
-      "SELECT folders.*, COUNT(notes.*) AS notes FROM folders LEFT JOIN notes ON folders.id = notes.folder_id WHERE folders.folder_id = ($1) GROUP BY folders.id;",
-      [folder_id]
-    );
-
+    let folders = await supabase.rpc("getfolders", {
+      folder_id_input: folderdata.data[0].id,
+    });
+    if (folders.error) throw folders.error;
     // for (let folder of folders.rows) {
     //   delete folder.chan_id;
     // }
-    res.send(folders.rows);
+    res.send({ folderdata: folderdata.data[0], folders: folders.data });
   } catch (err) {
     console.log(err);
     return res.send(err);
@@ -42,23 +46,26 @@ router.post("/", verifyToken, async (req, res) => {
     let { folder_id, title } = req.body;
     if (!title) return res.status(400).send({ response: "Missing Parameters" });
 
+    // If no folder_id, get ID of your Home Folder
     if (!folder_id) {
-      folder_id = await pool.query(
-        "SELECT * FROM folders WHERE folder_id IS NULL AND chan_id = ($1);",
-        [chan_id]
-      );
-      folder_id = folder_id.rows[0].id;
+      let homefolder = await supabase.rpc("getfolderhome", {
+        chan_id_input: chan_id,
+      });
+      if (homefolder.error) throw homefolder.error;
+      folder_id = homefolder.data[0].id;
     }
 
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
-    let folder = await pool.query(
-      "INSERT INTO folders (chan_id, folder_id, title, date_created) VALUES (($1), ($2), ($3), ($4)) RETURNING *;",
-      [chan_id, folder_id, title, time]
-    );
-
+    let folder = await supabase.rpc("newfolder", {
+      chan_id_input: chan_id,
+      folder_id_input: folder_id,
+      title_input: title,
+      time_input: time,
+    });
+    if (folder.error) throw folder.error;
     // delete folder.rows[0].chan_id;
-    res.send(folder.rows[0]);
+    res.send({ ...folder.data[0], notes: 0 });
   } catch (err) {
     console.log(err);
     return res.send(err);
@@ -66,6 +73,7 @@ router.post("/", verifyToken, async (req, res) => {
 });
 
 // Rename/Move a Folder w/ folder_id, title and parent_id
+// ISSUE : Doesn't return NOTES value. Should I make another SQL call to getfolders()? Yes.
 router.put("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
@@ -75,13 +83,24 @@ router.put("/", verifyToken, async (req, res) => {
     if (!folder_id || !title || !parent_id)
       return res.status(400).send({ response: "Missing Parameters" });
 
-    let folder = await pool.query(
-      "UPDATE folders SET title = ($1), folder_id = ($2) WHERE id = ($3) AND chan_id = ($4) RETURNING *;",
-      [title, parent_id, folder_id, chan_id]
-    );
+    // Edit Folder
+    let folder = await supabase.rpc("editfolder", {
+      chan_id_input: chan_id,
+      folder_id_input: folder_id,
+      parent_id_input: parent_id,
+      title_input: title,
+    });
+    console.log(folder);
+    if (folder.error) throw folder.error;
 
+    // Get Folder (needed for notes param)
+    folder = await supabase.rpc("getfolder", {
+      chan_id_input: chan_id,
+      folder_id_input: folder.data[0].id,
+    });
+    console.log(folder);
     // delete folder.rows[0].chan_id;
-    res.send(folder.rows[0]);
+    res.send(folder.data[0]);
   } catch (err) {
     console.log(err);
     return res.send(err);
@@ -96,10 +115,13 @@ router.delete("/", verifyToken, async (req, res) => {
     if (!folder_id)
       return res.status(400).send({ response: "Missing Parameters" });
 
-    await pool.query(
-      "DELETE FROM folders WHERE id = ($1) AND chan_id = ($2);",
-      [folder_id, chan_id]
-    );
+    let folder = await supabase.rpc("deletefolder", {
+      chan_id_input: chan_id,
+      folder_id_input: folder_id,
+    });
+    console.log(folder);
+    if (folder.error) throw folder.error;
+
     res.send({ response: "Success" });
   } catch (err) {
     console.log(err);

@@ -1,5 +1,4 @@
 const express = require("express");
-const pool = require("../db");
 const supabase = require("../supabase.js");
 const router = express.Router();
 const { verifyToken } = require("../middleware/auth");

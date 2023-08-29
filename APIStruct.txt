@@ -3,23 +3,23 @@ post("/photo") : Post a photo
 post("/photos") : Post array of photos
 
 // LOGIN ----------
- > post("/auth/signup") : Make new user +  Returns {User}
- > get("/auth/hasuser") [USE FOR AUTH] : Returns {User} + token from google_id. If none found, returns nothing.
+ post("/auth/signup") : Make new user +  Returns {User}
+ get("/auth/hasuser") [USE FOR AUTH] : Returns {User} + token from google_id. If none found, returns nothing.
 
 // USERS ----------
-> get("/users") : Gets User Data + Friends Num
-> put("/users") : Sets User Data
+get("/users") : Gets User Data + Friends Num
+put("/users") : Sets User Data
 
-> get("/users/friends") : Gets List of Friends
-> put("/users/friends") : Edits Friend: Queries: user_id
+get("/users/friends") : Gets List of Friends
+put("/users/friends") : Edits Friend: Queries: user_id
 
-> get("/users/blocks") : Gets List of Blocks
-> put("/users/blocks") : Edits Block: Queries: user_id
+get("/users/blocks") : Gets List of Blocks
+put("/users/blocks") : Edits Block: Queries: user_id
 
-> get("/users/search") : Queries: name
+get("/users/search") : Queries: name
 
 // FOLDERS ---------
-get("/folders") : Gets Nested Folders : Queries- folderid : If !folderid then return homepage folders
+get("/folders") : Gets Folder Data + Nested Folders. If no ':folderid,' use Homepage Folder.
 post("/folders") : Adds Folder
 put("/folders") : Queries :  folder_id, title, parent_id
 delete("/folders") : Deletes Folder

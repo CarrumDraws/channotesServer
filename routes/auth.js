@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../db");
 const supabase = require("../supabase.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
