@@ -16,11 +16,11 @@ router.get("/hasuser", async (req, res) => {
     let user = await supabase.rpc("hasuser", {
       email_input: email,
     });
+    console.log(user);
     if (user.error) throw error;
-    if (!user.data.chan_id)
+    user = user.data[0];
+    if (!user.chan_id)
       return res.status(400).send({ response: "Email Not Found" });
-
-    user = user.data;
 
     // ...then check if it's google_id matches.
     const isMatch = await bcrypt.compare(google_id, user.google_id);

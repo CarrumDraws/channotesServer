@@ -1,21 +1,42 @@
+--!
 create or replace function signup(google_id_input varchar, first_name_input varchar, last_name_input varchar, username_input varchar, email_input varchar, image_input varchar) 
-returns users 
+returns table(
+  chan_id uuid,
+  google_id varchar,
+  first_name varchar,
+  last_name varchar,
+  username varchar,
+  email varchar,
+  image varchar)
 language sql
 as $$
-  INSERT INTO users (google_id, first_name, last_name, username, email, image) VALUES (google_id_input, first_name_input, last_name_input, username_input, email_input, image_input) RETURNING *;
+  INSERT INTO users (google_id, first_name, last_name, username, email, image) VALUES (google_id_input, first_name_input, last_name_input, username_input, email_input, image_input) RETURNING chan_id, google_id, first_name, last_name, username, email, image;
 $$;
 
+--!
 create or replace function signup_newfolder(chan_id_input uuid, folder_id_input uuid, title_input varchar, date_created_input timestamp)
-returns folders
+returns table(
+  id uuid,
+  chan_id uuid,
+  folder_id uuid,
+  title varchar,
+  date_created timestamp) 
 language sql
 as $$
-  INSERT INTO folders (chan_id, folder_id, title, date_created) VALUES (chan_id_input, folder_id_input, title_input, date_created_input) RETURNING *;
+  INSERT INTO folders (chan_id, folder_id, title, date_created) VALUES (chan_id_input, folder_id_input, title_input, date_created_input) RETURNING id, chan_id, folder_id, title, date_created;
 $$;
 
--- Function Name is hasuser, which takes in email_input of type varchar.
+-- !
 create or replace function hasuser(email_input varchar)
-returns users -- Returns one row from 'users' table.
+returns table(
+  chan_id uuid,
+  google_id varchar,
+  first_name varchar,
+  last_name varchar,
+  username varchar,
+  email varchar,
+  image varchar)
 language sql
 as $$
-  SELECT * FROM users WHERE email = email_input; -- SQL Here.
+  SELECT chan_id, google_id, first_name, last_name, username, email, image FROM users WHERE email = email_input; -- SQL Here.
 $$;

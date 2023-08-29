@@ -65,7 +65,6 @@ app.post("/photos", uploads.array("photos"), function (req, res, next) {
 app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
   try {
     const { google_id, first_name, last_name, username, email } = req.body;
-
     if (
       !google_id ||
       !first_name ||
@@ -94,8 +93,8 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
         "/uploads/" +
         req.file.filename,
     });
-    if (user.error) throw error; // handle errors like so
-    user = user.data;
+    if (user.error) throw user.error; // handle errors like so
+    user = user.data[0];
 
     // Create Homepage Folder
     let date = new Date();
@@ -130,6 +129,7 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
     let image = await supabase.rpc("setuser_image", {
       chan_id_input: chan_id,
     });
+    console.log(image);
     if (image.error) throw error;
     image = image.data;
 
@@ -158,7 +158,7 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
       image_input: image,
       chan_id_input: chan_id,
     });
-    if (user.error) throw error;
+    if (user.error) throw user.error;
     delete user.data.google_id;
     res.send(user.data);
   } catch (err) {
