@@ -93,11 +93,6 @@ router.put("/friends", verifyToken, async (req, res) => {
 router.get("/blocks", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
-
-    // let block = await pool.query(
-    //   "SELECT users.chan_id, users.first_name, users.last_name, users.username, users.email, users.image FROM users LEFT JOIN blocks ON users.chan_id = blocks.chan_id_a WHERE blocks.chan_id = ($1);",
-    //   [chan_id]
-    // );
     let block = await supabase.rpc("getblocks", {
       chan_id_input: chan_id,
     });

@@ -15,26 +15,12 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
-const path = require("path");
 const supabase = require("./supabase.js");
 
 // FILE STORAGE -----
 const multer = require("multer");
-const storage = multer.diskStorage({
-  // destination: Directory where files are saved.
-  // __dirname = C:\Users\Carrum\ReactStuff\channotes_server
-  destination: (req, file, callback) => {
-    callback(null, __dirname + "/uploads");
-  },
-  // filename: Name the files.
-  filename: (req, file, callback) => {
-    // Naming this way prevents file overlap!
-    callback(null, Date.now() + file.originalname);
-  },
-});
+const storage = multer.memoryStorage();
 const uploads = multer({ storage: storage });
-// Sets Image Directory
-app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
 // MIDDLEWARE -----
 app.use(express.json()); // Allows access to req.body
@@ -44,8 +30,6 @@ dotenv.config(); // Reading .env files
 
 // FILE STORAGE EXAMPLES -----
 app.post("/photo", uploads.single("photo"), function (req, res, next) {
-  // .single means "One Photo with Key 'photo'"
-  console.log(req.protocol + "://" + req.get("host"));
   console.log(req.file); // File Data
   res.json({ status: "Single File Recieved" });
 });
@@ -54,6 +38,43 @@ app.post("/photos", uploads.array("photos"), function (req, res, next) {
   // .array means "Multiple Photos with Key 'photos'"
   console.log(req.files); // Files Data
   res.json({ status: "Multiple Files recieved" });
+});
+
+// SUPABASE FILE STORAGE EXAMPLES -----
+app.post("/supabasephoto", uploads.single("image"), async (req, res) => {
+  try {
+    const filename = Date.now() + req.file.originalname;
+    const image = await supabase.storage
+      .from("images") // Bucket Name
+      .upload(filename, req.file.buffer); // Filepath name
+    console.log(image);
+    if (image.error) throw image.error;
+
+    // Get URL of image that was just passed in
+    const url = supabase.storage.from("images").getPublicUrl(filename);
+    console.log(url.data.publicUrl);
+
+    res.json({ status: "Single File Recieved" });
+  } catch (err) {
+    console.log(err);
+    return res.send(err);
+  }
+});
+
+app.delete("/supabasephoto", async (req, res) => {
+  try {
+    let { image } = req.query;
+    const filename = image.split("/").at(-1);
+    console.log(filename);
+    const oldimage = await supabase.storage.from("images").remove(filename);
+    console.log(oldimage);
+    if (oldimage.error) throw oldimage.error;
+
+    res.json({ status: "Single File Deleted" });
+  } catch (err) {
+    console.log(err);
+    return res.send(err);
+  }
 });
 
 // ROUTES WITH IMAGE UPLOAD -----
@@ -75,6 +96,17 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
     )
       return res.status(400).send({ response: "Missing Data" });
 
+    // Upload Image to Supabase
+    const filename = Date.now() + req.file.originalname;
+    const image = await supabase.storage
+      .from("images")
+      .upload(filename, req.file.buffer);
+    if (image.error) throw image.error;
+
+    // Get URL of image that was just uploaded
+    const url = supabase.storage.from("images").getPublicUrl(filename);
+    url = url.data.publicUrl;
+
     // bcrypt google_id
     const salt = await bcrypt.genSalt();
     const googleHash = await bcrypt.hash(google_id, salt);
@@ -86,12 +118,7 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
       last_name_input: last_name,
       username_input: username,
       email_input: email,
-      image_input:
-        req.protocol +
-        "://" +
-        req.get("host") +
-        "/uploads/" +
-        req.file.filename,
+      image_input: url,
     });
     if (user.error) throw user.error; // handle errors like so
     user = user.data[0];
@@ -125,37 +152,37 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
       return res.status(400).send({ response: "Missing Parameters" });
     }
 
-    // Get Old Image URL
-    let image = await supabase.rpc("setuser_image", {
+    // Upload newimage to Supabase
+    const filename = Date.now() + req.file.originalname;
+    const image = await supabase.storage
+      .from("images")
+      .upload(filename, req.file.buffer);
+    if (image.error) throw image.error;
+
+    // Get URL of newimage
+    let url = supabase.storage.from("images").getPublicUrl(filename);
+    url = url.data.publicUrl;
+
+    // Get URL of oldimage
+    let oldimage = await supabase.rpc("getuser", {
       chan_id_input: chan_id,
     });
-    console.log(image);
-    if (image.error) throw error;
-    image = image.data;
+    console.log(oldimage);
+    if (oldimage.error) throw oldimage.error;
+    oldimage = oldimage.data[0].image;
+    oldimage = oldimage.split("/").at(-1);
+    console.log(oldimage);
 
-    // Delete Old Image + Change URL
-    if (req.file) {
-      const lastPart = image.split("/").at(-1);
-      fs.unlink(__dirname + "/uploads/" + lastPart, (err) => {
-        if (err) {
-          console.log("Image Deletion Error: ");
-          console.log(err);
-        }
-      });
-      image =
-        req.protocol +
-        "://" +
-        req.get("host") +
-        "/uploads/" +
-        req.file.filename;
-    }
+    // Delete Old Image
+    oldimage = await supabase.storage.from("images").remove(oldimage);
+    if (oldimage.error) throw oldimage.error;
 
     // Update User
     let user = await supabase.rpc("setuser", {
       first_name_input: first_name,
       last_name_input: last_name,
       username_input: username,
-      image_input: image,
+      image_input: url,
       chan_id_input: chan_id,
     });
     if (user.error) throw user.error;
