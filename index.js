@@ -168,10 +168,10 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
       chan_id_input: chan_id,
     });
     if (oldimage.error) throw oldimage.error;
-    console.log("Old Image:");
-    console.log(oldimage.data[0]);
     oldimage = oldimage.data[0].image;
-    oldimage = oldimage.split("/").at(-1);
+    oldimage = oldimage.toString().split("/").at(-1); // .split isnt recognized by render...
+    console.log("Old Image:");
+    console.log(oldimage);
 
     // Delete Old Image
     oldimage = await supabase.storage.from("images").remove(oldimage);
