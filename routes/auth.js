@@ -8,7 +8,6 @@ const jwt = require("jsonwebtoken");
 // If no user found, returns nothing.
 router.get("/hasuser", async (req, res) => {
   try {
-    console.log("Authorizing");
     const { email, google_id } = req.query;
     if (!email || !google_id)
       return res.status(400).send({ response: "Missing Parameters" });
