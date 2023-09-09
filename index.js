@@ -167,15 +167,28 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
     let oldimage = await supabase.rpc("getuser", {
       chan_id_input: chan_id,
     });
-    if (oldimage.error) throw oldimage.error;
-    oldimage = oldimage.data[0].image;
-    oldimage = oldimage.toString().split("/").at(-1); // .split isnt recognized by render...
-    console.log("Old Image:");
+    console.log("oldimage:");
     console.log(oldimage);
-
-    // Delete Old Image
-    oldimage = await supabase.storage.from("images").remove(oldimage);
     if (oldimage.error) throw oldimage.error;
+    let oldimageurl = oldimage.data[0].image;
+    console.log("oldimageurl:");
+    console.log(oldimageurl);
+    console.log(typeof oldimageurl);
+
+    console.log(
+      "https://jduihvayloafiorvjlfy.supabase.co/storage/v1/object/public/images/1694242563788AsianGuy.webp"
+        .split("/")
+        .at(-1)
+    );
+
+    oldimageurl = oldimageurl.toString().split("/").at(-1); // .split isnt recognized by render...
+    console.log("new oldimageurl:");
+    console.log(oldimageurl);
+    // Delete Old Image
+    let removedimage = await supabase.storage
+      .from("images")
+      .remove(oldimageurl);
+    if (removedimage.error) throw removedimage.error;
 
     // Update User
     let user = await supabase.rpc("setuser", {
