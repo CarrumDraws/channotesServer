@@ -47,7 +47,6 @@ app.post("/supabasephoto", uploads.single("image"), async (req, res) => {
     const image = await supabase.storage
       .from("images") // Bucket Name
       .upload(filename, req.file.buffer); // Filepath name
-    console.log(image);
     if (image.error) throw image.error;
 
     // Get URL of image that was just passed in
@@ -97,14 +96,15 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
       return res.status(400).send({ response: "Missing Data" });
 
     // Upload Image to Supabase
-    const filename = Date.now() + req.file.originalname;
+    let filename = req.file.originalname.replace(/\s/g, "");
+    filename = Date.now() + filename;
     const image = await supabase.storage
       .from("images")
       .upload(filename, req.file.buffer);
     if (image.error) throw image.error;
 
     // Get URL of image that was just uploaded
-    const url = supabase.storage.from("images").getPublicUrl(filename);
+    let url = supabase.storage.from("images").getPublicUrl(filename);
     url = url.data.publicUrl;
 
     // bcrypt google_id
@@ -147,13 +147,13 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let { first_name, last_name, username } = req.body;
-
-    if (!first_name || !last_name || !username) {
+    if (!first_name || !last_name || !username || !req.file) {
       return res.status(400).send({ response: "Missing Parameters" });
     }
 
     // Upload newimage to Supabase
-    const filename = Date.now() + req.file.originalname;
+    let filename = req.file.originalname.replace(/\s/g, "");
+    filename = Date.now() + filename;
     const image = await supabase.storage
       .from("images")
       .upload(filename, req.file.buffer);
@@ -167,11 +167,9 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
     let oldimage = await supabase.rpc("getuser", {
       chan_id_input: chan_id,
     });
-    console.log(oldimage);
     if (oldimage.error) throw oldimage.error;
     oldimage = oldimage.data[0].image;
     oldimage = oldimage.split("/").at(-1);
-    console.log(oldimage);
 
     // Delete Old Image
     oldimage = await supabase.storage.from("images").remove(oldimage);
@@ -185,9 +183,10 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
       image_input: url,
       chan_id_input: chan_id,
     });
+
     if (user.error) throw user.error;
     delete user.data.google_id;
-    res.send(user.data);
+    res.send(user.data[0]);
   } catch (err) {
     console.log(err);
     return res.send(err);

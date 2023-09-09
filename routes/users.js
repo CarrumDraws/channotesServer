@@ -1,12 +1,16 @@
+const bodyParser = require("body-parser");
 const express = require("express");
-const supabase = require("../supabase.js");
 const router = express.Router();
+const supabase = require("../supabase.js");
 const { verifyToken } = require("../middleware/auth");
+
+// router.use(express.json()); // Allows access to req.body
+// router.use(bodyParser.json()); // Parse the JSON request body
 
 // Gets Data of a User + Friends Num
 router.get("/", verifyToken, async (req, res) => {
   try {
-    let chan_id = req.user.chan_id;
+    const { chan_id } = req.query;
     if (!chan_id)
       return res.status(400).send({ response: "Missing Parameters" });
 
@@ -17,6 +21,32 @@ router.get("/", verifyToken, async (req, res) => {
     user = user.data[0];
     delete user.google_id;
     res.send(user);
+  } catch (err) {
+    console.log(err);
+    return res.send(err);
+  }
+});
+
+// Delete Old Profile Pic + Set New User Data + Return User Data
+router.put("/noimage", verifyToken, async (req, res) => {
+  try {
+    let chan_id = req.user.chan_id;
+    let { first_name, last_name, username } = req.body;
+    if (!first_name || !last_name || !username) {
+      return res.status(400).send({ response: "Missing Parameters" });
+    }
+
+    // Update User
+    let user = await supabase.rpc("setusernoimage", {
+      first_name_input: first_name,
+      last_name_input: last_name,
+      username_input: username,
+      chan_id_input: chan_id,
+    });
+
+    if (user.error) throw user.error;
+    delete user.data.google_id;
+    res.send(user.data[0]);
   } catch (err) {
     console.log(err);
     return res.send(err);

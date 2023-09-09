@@ -8,6 +8,7 @@ const jwt = require("jsonwebtoken");
 // If no user found, returns nothing.
 router.get("/hasuser", async (req, res) => {
   try {
+    console.log("Authorizing");
     const { email, google_id } = req.query;
     if (!email || !google_id)
       return res.status(400).send({ response: "Missing Parameters" });
@@ -16,11 +17,10 @@ router.get("/hasuser", async (req, res) => {
     let user = await supabase.rpc("hasuser", {
       email_input: email,
     });
-    console.log(user);
-    if (user.error) throw error;
+    if (user.error) throw user.error;
     user = user.data[0];
-    if (!user.chan_id)
-      return res.status(400).send({ response: "Email Not Found" });
+    if (!user || !user.chan_id)
+      return res.status(400).send({ response: "User Not Found" });
 
     // ...then check if it's google_id matches.
     const isMatch = await bcrypt.compare(google_id, user.google_id);

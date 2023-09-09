@@ -8,7 +8,8 @@ post("/photos") : Post array of photos
 
 // USERS ----------
 get("/users") : Gets User Data + Friends Num
-put("/users") : Sets User Data
+put("/users") : Sets User Data (With Image)
+put("/users/noimage") : Sets User Data (Without Image)
 
 get("/users/friends") : Gets List of Friends
 put("/users/friends") : Edits Friend: Queries: user_id
