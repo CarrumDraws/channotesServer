@@ -157,7 +157,6 @@ router.delete("/", verifyToken, async (req, res) => {
       chan_id_input: chan_id,
       note_id_input: note_id,
     });
-    console.log(note);
     if (note.error) throw note.error;
     res.send({ response: "Success" });
   } catch (err) {

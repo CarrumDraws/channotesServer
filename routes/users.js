@@ -60,7 +60,6 @@ router.get("/friends", verifyToken, async (req, res) => {
     let friends = await supabase.rpc("getfriends", {
       chan_id_input: chan_id,
     });
-    console.log(friends);
     if (friends.error) throw friends.error;
     res.send(friends.data);
   } catch (err) {
@@ -126,7 +125,6 @@ router.get("/blocks", verifyToken, async (req, res) => {
     let block = await supabase.rpc("getblocks", {
       chan_id_input: chan_id,
     });
-    console.log(block);
     res.send(block.data);
   } catch (err) {
     console.log(err);
@@ -149,7 +147,6 @@ router.put("/blocks", verifyToken, async (req, res) => {
       chan_id_input: chan_id,
       user_id_input: user_id,
     });
-    console.log(isBlocked);
     if (isBlocked.error) throw isBlocked.error;
     if (isBlocked.data.length == 0) {
       // Block :(

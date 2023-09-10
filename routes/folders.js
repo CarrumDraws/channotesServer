@@ -90,7 +90,6 @@ router.put("/", verifyToken, async (req, res) => {
       parent_id_input: parent_id,
       title_input: title,
     });
-    console.log(folder);
     if (folder.error) throw folder.error;
 
     // Get Folder (needed for notes param)
@@ -98,7 +97,6 @@ router.put("/", verifyToken, async (req, res) => {
       chan_id_input: chan_id,
       folder_id_input: folder.data[0].id,
     });
-    console.log(folder);
     // delete folder.rows[0].chan_id;
     res.send(folder.data[0]);
   } catch (err) {
@@ -119,7 +117,6 @@ router.delete("/", verifyToken, async (req, res) => {
       chan_id_input: chan_id,
       folder_id_input: folder_id,
     });
-    console.log(folder);
     if (folder.error) throw folder.error;
 
     res.send({ response: "Success" });

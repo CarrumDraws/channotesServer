@@ -13,7 +13,6 @@ const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const supabase = require("./supabase.js");
 
@@ -167,23 +166,9 @@ app.put("/users", verifyToken, uploads.single("image"), async (req, res) => {
     let oldimage = await supabase.rpc("getuser", {
       chan_id_input: chan_id,
     });
-    console.log("oldimage:");
-    console.log(oldimage);
     if (oldimage.error) throw oldimage.error;
     let oldimageurl = oldimage.data[0].image;
-    console.log("oldimageurl:");
-    console.log(oldimageurl);
-    console.log(typeof oldimageurl);
-
-    console.log(
-      "https://jduihvayloafiorvjlfy.supabase.co/storage/v1/object/public/images/1694242563788AsianGuy.webp"
-        .split("/")
-        .at(-1)
-    );
-
-    oldimageurl = oldimageurl.toString().split("/").at(-1); // .split isnt recognized by render...
-    console.log("new oldimageurl:");
-    console.log(oldimageurl);
+    oldimageurl = oldimageurl.toString().split("/").at(-1);
     // Delete Old Image
     let removedimage = await supabase.storage
       .from("images")
