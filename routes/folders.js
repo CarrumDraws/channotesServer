@@ -6,32 +6,31 @@ const { verifyToken } = require("../middleware/auth");
 // Gets Folder Data + Nested Folders. If no ':folderid,' use Homepage Folder.
 router.get("/", verifyToken, async (req, res) => {
   try {
-    let chan_id = req.user.chan_id;
-    let folder_id = req.query.folder_id;
-    let folderdata;
-
-    // Get Folder Data of folder_id. If no folder_id, get ID of Home Folder
-    if (!folder_id) {
-      folderdata = await supabase.rpc("getfolderhome", {
-        chan_id_input: chan_id,
-      });
-    } else {
-      folderdata = await supabase.rpc("getfolder", {
-        chan_id_input: chan_id,
-        folder_id_input: folder_id,
-      });
-    }
-    if (folderdata.error) throw folderdata.error;
+    let chan_id = req.user.chan_id,
+      folder_id = req.query.folder_id;
 
     // Find Child Folders
-    let folders = await supabase.rpc("getfolders", {
-      folder_id_input: folderdata.data[0].id,
+    let folders = await supabase.rpc("getfoldershome", {
+      chan_id_input: chan_id,
     });
     if (folders.error) throw folders.error;
-    // for (let folder of folders.rows) {
-    //   delete folder.chan_id;
-    // }
-    res.send({ folderdata: folderdata.data[0], folders: folders.data });
+    folders = folders.data;
+
+    // Format Data
+    let hash = {},
+      folder; // Target folder
+    for (let i = 0; i < folders.length; i++) {
+      if (folders[i].id == folder_id) folder = folders[i];
+      if (!hash[folders[i].id]) hash[folders[i].id] = [];
+      if (!hash[folders[i].folder_id]) hash[folders[i].folder_id] = [];
+      folders[i].folders = hash[folders[i].id];
+      hash[folders[i].folder_id].push(folders[i]);
+    }
+    folder_id
+      ? folder
+        ? res.send(folder)
+        : res.send([])
+      : res.send(hash["null"]);
   } catch (err) {
     console.log(err);
     return res.send(err);
