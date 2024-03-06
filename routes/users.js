@@ -11,19 +11,17 @@ const { verifyToken } = require("../middleware/auth");
 router.get("/", verifyToken, async (req, res) => {
   try {
     const { chan_id } = req.query;
-    if (!chan_id)
-      return res.status(400).send({ response: "Missing Parameters" });
-
-    let user = await supabase.rpc("getuser", {
+    if (!chan_id) return res.status(400).json({ error: "Missing Parameters" });
+    const { error, data } = await supabase.rpc("getuser", {
       chan_id_input: chan_id,
     });
-    if (user.error) throw user.error;
-    user = user.data[0];
+    if (error) throw new Error(error.message); // Invalid Input
+    const user = data?.[0];
+    if (!user) throw new Error("User Not Found"); // User Not Returned
     delete user.google_id;
-    res.send(user);
+    return res.json(user);
   } catch (err) {
-    console.log(err);
-    return res.send(err);
+    return res.status(404).json({ message: err.message });
   }
 });
 
