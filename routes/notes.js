@@ -9,28 +9,26 @@ router.get("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let folder_id = req.query.folder_id;
+    if (!chan_id) return res.status(400).json({ error: "Missing Parameters" });
 
     // If no folder_id, get ID of your Home Folder
     if (!folder_id) {
-      let homefolder = await supabase.rpc("getfolderhome", {
+      let { data, error } = await supabase.rpc("getfolderhome", {
         chan_id_input: chan_id,
       });
-      if (homefolder.error) throw homefolder.error;
-      folder_id = homefolder.data[0].id;
+      if (error) throw new Error(error.message);
+      folder_id = data[0].id;
     }
 
     // Find Child Notes
-    let notes = await supabase.rpc("getnotes", {
+    let { data, error } = await supabase.rpc("getnotes", {
       chan_id_input: chan_id,
       folder_id_input: folder_id,
     });
-    // for (let note of notes.rows) {
-    //   delete note.chan_id;
-    // }
-    res.send(notes.data);
+    if (error) throw new Error(error.message);
+    res.send(data);
   } catch (err) {
-    console.log(err);
-    return res.send(err);
+    return res.status(404).json({ message: err.message });
   }
 });
 

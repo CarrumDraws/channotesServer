@@ -8,32 +8,30 @@ router.get("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id,
       folder_id = req.query.folder_id;
+    if (!chan_id) return res.status(400).json({ error: "Missing Parameters" });
 
-    // Find Child Folders
-    let folders = await supabase.rpc("getfoldershome", {
+    // Gets All Folders
+    let { data, error } = await supabase.rpc("getallfolders", {
       chan_id_input: chan_id,
     });
-    if (folders.error) throw folders.error;
-    folders = folders.data;
+    if (error) throw new Error(error.message);
 
     // Format Data
-    let hash = {},
-      folder; // Target folder
-    for (let i = 0; i < folders.length; i++) {
-      if (folders[i].id == folder_id) folder = folders[i];
-      if (!hash[folders[i].id]) hash[folders[i].id] = [];
-      if (!hash[folders[i].folder_id]) hash[folders[i].folder_id] = [];
-      folders[i].folders = hash[folders[i].id];
-      hash[folders[i].folder_id].push(folders[i]);
+    let hash = {};
+    let folder; // Target folder
+    for (let i = 0; i < data.length; i++) {
+      if (data[i].id == folder_id) folder = data[i];
+      if (!hash[data[i].id]) hash[data[i].id] = [];
+      if (!hash[data[i].folder_id]) hash[data[i].folder_id] = [];
+      data[i].data = hash[data[i].id];
+      hash[data[i].folder_id].push(data[i]);
     }
-    folder_id
-      ? folder
-        ? res.send(folder)
-        : res.send([])
-      : res.send(hash["null"]);
+    if (folder_id) {
+      if (folder) res.send(folder);
+      else throw new Error("Invalid chan_id");
+    } else res.send(hash["null"][0]);
   } catch (err) {
-    console.log(err);
-    return res.send(err);
+    return res.status(404).json({ message: err.message });
   }
 });
 
