@@ -23,7 +23,7 @@ router.get("/", verifyToken, async (req, res) => {
       if (data[i].id == folder_id) folder = data[i];
       if (!hash[data[i].id]) hash[data[i].id] = [];
       if (!hash[data[i].folder_id]) hash[data[i].folder_id] = [];
-      data[i].data = hash[data[i].id];
+      data[i].folders = hash[data[i].id];
       hash[data[i].folder_id].push(data[i]);
     }
     if (folder_id) {
