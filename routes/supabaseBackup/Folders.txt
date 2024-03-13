@@ -1,3 +1,4 @@
+-- Gets One Folder
 create or replace function getfolder(chan_id_input uuid, folder_id_input uuid)
 returns table(
     id uuid,
@@ -8,9 +9,14 @@ returns table(
     notes int) 
 language sql
 as $$
-  SELECT folders.id, folders.chan_id, folders.folder_id, folders.title, folders.date_created, COUNT(notes.*) AS notes FROM folders LEFT JOIN notes ON folders.id = notes.folder_id WHERE folders.id = folder_id_input AND folders.chan_id = chan_id_input GROUP BY folders.id;
+  -- QUERY BREAKDOWN
+  -- The section between FROM and GROUP represent the temp table you date_created to extract data from.
+  -- We need to JOIN to notes so your COUNT(notes.*) can execute. This needs to be a LEFT JOIN so that folders without notes will be included in the table.
+  -- GROUP BY is needed as you used both aggregate (COUNT) and nonaggregate (folders.id) functions together.
+  SELECT folders.id, folders.chan_id, folders.folder_id, folders.title, folders.date_created, COUNT(notes.*) AS notes FROM folders LEFT JOIN notes ON folders.id = notes.folder_id WHERE folders.chan_id = chan_id_input AND folders.id = folder_id_input GROUP BY folders.id;
 $$;
 
+-- Gets Home Folder
 create or replace function getfolderhome(chan_id_input uuid)
 returns table(
     id uuid,
@@ -21,10 +27,10 @@ returns table(
     notes int) 
 language sql
 as $$
-  -- SELECT id, chan_id, folder_id, title, date_created FROM folders WHERE folder_id IS NULL AND chan_id = chan_id_input;
   SELECT folders.id, folders.chan_id, folders.folder_id, folders.title, folders.date_created, COUNT(notes.*) AS notes FROM folders LEFT JOIN notes ON folders.id = notes.folder_id WHERE folders.folder_id IS NULL AND folders.chan_id = chan_id_input GROUP BY folders.id;
 $$;
 
+-- Returns folder + all subfolders (unused)
 create or replace function getfolders(folder_id_input uuid)
 returns table(
     id uuid,
@@ -36,7 +42,42 @@ returns table(
     ) 
 language sql
 as $$
-  SELECT folders.*, COUNT(notes.*) AS notes FROM folders LEFT JOIN notes ON folders.id = notes.folder_id WHERE folders.folder_id = folder_id_input GROUP BY folders.id;
+  -- Recursive CTE finds the tables we need.
+  WITH RECURSIVE myFolders AS (
+      SELECT id, chan_id, folder_id, title, date_created
+      FROM folders
+      WHERE id = folder_id_input 
+      UNION ALL
+      SELECT b.id, b.chan_id, b.folder_id, b.title, b.date_created
+      FROM folders b
+      INNER JOIN myFolders ON myFolders.id = b.folder_id
+  )
+  -- LEFT JOIN afterwards to get our notes count.
+  SELECT c.id, c.chan_id, c.folder_id, c.title, c.date_created, COUNT(notes.id) AS numNotes
+  FROM myFolders c
+  LEFT JOIN notes ON notes.folder_id = c.id
+  GROUP BY c.id, c.chan_id, c.folder_id, c.title, c.date_created
+  ORDER BY c.id;
+$$;
+
+-- Returns all user's folders
+create or replace function getallfolders(chan_id_input uuid)
+returns table(
+    id uuid,
+    chan_id uuid,
+    folder_id uuid,
+    title varchar,
+    date_created timestamp,
+    notes int
+    ) 
+language sql
+as $$
+  SELECT c.id, c.chan_id, c.folder_id, c.title, c.date_created, COUNT(notes.id) AS numNotes
+  FROM folders c
+  LEFT JOIN notes ON notes.folder_id = c.id
+  WHERE c.chan_id = chan_id_input
+  GROUP BY c.id, c.chan_id, c.folder_id, c.title, c.date_created
+  ORDER BY c.id;
 $$;
 
 create or replace function newfolder(chan_id_input uuid, folder_id_input uuid, title_input varchar, time_input timestamp)

@@ -9,12 +9,47 @@ const { verifyToken } = require("./middleware/auth.js");
 
 const express = require("express");
 const app = express();
+const http = require("http");
+const server = http.createServer(app);
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
 const supabase = require("./supabase.js");
+
+// socket.io setup -----
+const { Server } = require("socket.io");
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+  },
+});
+
+// SOCKETIO -----
+io.on("connection", (socket) => {
+  socket.on("get-document", async (note_id) => {
+    const delta = await getDocument(note_id);
+    socket.join(note_id); // Join Note Room
+    socket.emit("load-document", delta); // Load Note Room Data
+
+    // Broadcast Note Room Changes
+    socket.on("send-changes", (delta) => {
+      socket.broadcast.to(note_id).emit("recieve-changes", delta); // Send to others
+    });
+
+    // Save Document
+    socket.on("save-document", async (delta) => {
+      // Save delta to note_id in DB
+    });
+  });
+});
+
+// Get Delta from DB
+function getDocument(note_id) {
+  return "Yo";
+}
 
 // FILE STORAGE -----
 const multer = require("multer");
@@ -202,4 +237,7 @@ app.use("/notes", notesRoutes);
 app.use("/shares", sharesRoutes);
 app.use("/users", userRoutes);
 
-app.listen(5000, () => console.log("Server Started at PORT 5000"));
+// Alternative to app.listen(5000, () => { });
+server.listen(5000, () => {
+  console.log("Server Started at PORT 5000");
+});

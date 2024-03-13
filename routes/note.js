@@ -3,27 +3,6 @@ const supabase = require("../supabase.js");
 const router = express.Router();
 const { verifyToken } = require("../middleware/auth");
 
-// Gets Text of Specific Note
-router.get("/", verifyToken, async (req, res) => {
-  try {
-    let chan_id = req.user.chan_id;
-    let note_id = req.query.note_id;
-    if (!note_id)
-      return res.status(400).send({ response: "Missing Parameters" });
-
-    let note = await supabase.rpc("getnote", {
-      chan_id_input: chan_id,
-      note_id_input: note_id,
-    });
-    if (note.error) throw note.error;
-
-    res.send(note.data[0]);
-  } catch (err) {
-    console.log(err);
-    return res.send(err);
-  }
-});
-
 // Create New Note w/ folder_id
 // If !folder_id then put in Home Folder.
 router.post("/", verifyToken, async (req, res) => {
@@ -52,6 +31,27 @@ router.post("/", verifyToken, async (req, res) => {
     if (note.error) throw note.error;
 
     // delete note.rows[0].chan_id;
+    res.send(note.data[0]);
+  } catch (err) {
+    console.log(err);
+    return res.send(err);
+  }
+});
+
+// Gets Text of Specific Note
+router.get("/", verifyToken, async (req, res) => {
+  try {
+    let chan_id = req.user.chan_id;
+    let note_id = req.query.note_id;
+    if (!note_id)
+      return res.status(400).send({ response: "Missing Parameters" });
+
+    let note = await supabase.rpc("getnote", {
+      chan_id_input: chan_id,
+      note_id_input: note_id,
+    });
+    if (note.error) throw note.error;
+
     res.send(note.data[0]);
   } catch (err) {
     console.log(err);
@@ -146,7 +146,7 @@ router.put("/meta", verifyToken, async (req, res) => {
   }
 });
 
-// Delete Note = Subtract 1 from parentFolders's count
+// Delete Note
 router.delete("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;

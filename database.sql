@@ -1,9 +1,14 @@
--- Don't do anything with this lmao
-
-CREATE DATABASE ChanNotes;
+DROP TABLE users CASCADE;
+DROP TABLE folders CASCADE;
+DROP TABLE notes CASCADE;
+DROP TABLE notephotos CASCADE;
+DROP TABLE shares CASCADE;
+DROP TABLE friends CASCADE;
+DROP TABLE blocks CASCADE;
 
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    chan_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    google_id VARCHAR(255),
     first_name VARCHAR(255),
     last_name VARCHAR(255),
     username VARCHAR(255),
@@ -12,81 +17,88 @@ CREATE TABLE users (
 );
 
 CREATE TABLE folders (
-    id SERIAL PRIMARY KEY,
-    user_id INT, -- Foreign Key
-        CONSTRAINT fk_user -- Name the Constraint
-            FOREIGN KEY (user_id) -- Link...
-                REFERENCES users(id), -- ...Together.
-    folder_id INT, -- Foreign Key
-        CONSTRAINT fk_folder -- Name the Constraint
-            FOREIGN KEY (folder_id) -- Link...
-                REFERENCES folders(id), -- ...Together.
-    title VARCHAR(255),
-    date_created TIMESTAMP,
-    date_edited TIMESTAMP
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    chan_id uuid, 
+        CONSTRAINT fk_user 
+            FOREIGN KEY (chan_id) 
+                REFERENCES users(chan_id) ON DELETE CASCADE,
+    folder_id uuid,
+        CONSTRAINT fk_folder
+            FOREIGN KEY (folder_id) 
+                REFERENCES folders(id) ON DELETE CASCADE, 
+    title VARCHAR(255) DEFAULT 'New Folder',
+    date_created TIMESTAMP
 );
 
 CREATE TABLE notes (
-    id SERIAL PRIMARY KEY,
-    user_id INT, -- Foreign Key
-        CONSTRAINT fk_user -- Name the Constraint
-            FOREIGN KEY (user_id) -- Link...
-                REFERENCES users(id), -- ...Together.
-    folder_id INT, -- Foreign Key
-        CONSTRAINT fk_folder -- Name the Constraint
-            FOREIGN KEY (folder_id) -- Link...
-                REFERENCES folders(id), -- ...Together.
-    title VARCHAR(255),
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    chan_id uuid, 
+        CONSTRAINT fk_user 
+            FOREIGN KEY (chan_id) 
+                REFERENCES users(chan_id) ON DELETE CASCADE,
+    folder_id uuid, 
+        CONSTRAINT fk_folder
+            FOREIGN KEY (folder_id) 
+                REFERENCES folders(id) ON DELETE CASCADE, 
+    title VARCHAR(255) DEFAULT 'New Note',
     date_created TIMESTAMP,
     date_edited TIMESTAMP,
-    text TEXT,
-    locked BOOL,
-    password VARCHAR(255),
-    fontColor VARCHAR(255),
-    backgroundColor VARCHAR(255)
+    text JSONB DEFAULT null,
+    pinned BOOL DEFAULT false,
+    locked BOOL DEFAULT false,
+    password VARCHAR(255) DEFAULT '',
+    font_color VARCHAR(255) DEFAULT '#000000',
+    background_color VARCHAR(255) DEFAULT '#ffffff'
 );
 
 CREATE TABLE notephotos (
-    id SERIAL PRIMARY KEY,
-    note_id INT, -- Foreign Key
-        CONSTRAINT fk_note -- Name the Constraint
-            FOREIGN KEY (note_id) -- Link...
-                REFERENCES notes(id), -- ...Together.
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    note_id uuid, 
+        CONSTRAINT fk_note
+            FOREIGN KEY (note_id)
+                REFERENCES notes(id) ON DELETE CASCADE,
     image VARCHAR(255),
     position VARCHAR(255)
 );
 
 CREATE TABLE shares (
-    note_id INT, -- Foreign Key
-        CONSTRAINT fk_note -- Name the Constraint
-            FOREIGN KEY (note_id) -- Link...
-                REFERENCES notes(id), -- ...Together.
-    user_id INT, -- Foreign Key
-        CONSTRAINT fk_user -- Name the Constraint
-            FOREIGN KEY (user_id) -- Link...
-                REFERENCES users(id) -- ...Together.
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    chan_id_a uuid,
+        CONSTRAINT fk_note
+            FOREIGN KEY (chan_id_a) 
+                REFERENCES users(chan_id) ON DELETE CASCADE, 
+    note_id uuid,
+        CONSTRAINT fk_user 
+            FOREIGN KEY (note_id) 
+                REFERENCES notes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE friends (
-    user_id INT, -- Foreign Key
-        CONSTRAINT fk_user -- Name the Constraint
-            FOREIGN KEY (user_id) -- Link...
-                REFERENCES users(id), -- ...Together.
-    friend_id INT, -- Foreign Key
-        CONSTRAINT fk_friend -- Name the Constraint
-            FOREIGN KEY (friend_id) -- Link...
-                REFERENCES users(id) -- ...Together.
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    chan_id_a uuid,
+        CONSTRAINT fk_user 
+            FOREIGN KEY (chan_id_a)
+                REFERENCES users(chan_id) ON DELETE CASCADE,
+    chan_id_b uuid,
+        CONSTRAINT fk_friend
+            FOREIGN KEY (chan_id_b)
+                REFERENCES users(chan_id) ON DELETE CASCADE
 );
 
 CREATE TABLE blocks (
-    user_id INT, -- Foreign Key
-        CONSTRAINT fk_user -- Name the Constraint
-            FOREIGN KEY (user_id) -- Link...
-                REFERENCES users(id), -- ...Together.
-    enemy_id INT, -- Foreign Key
-        CONSTRAINT fk_enemy -- Name the Constraint
-            FOREIGN KEY (enemy_id) -- Link...
-                REFERENCES users(id) -- ...Together.
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    chan_id uuid,
+        CONSTRAINT fk_user 
+            FOREIGN KEY (chan_id)
+                REFERENCES users(chan_id) ON DELETE CASCADE, 
+    chan_id_a uuid, 
+        CONSTRAINT fk_enemy 
+            FOREIGN KEY (chan_id_a) 
+                REFERENCES users(chan_id) ON DELETE CASCADE
 );
 
+SELECT * FROM users;
+SELECT * FROM folders;
 SELECT * FROM notes;
+SELECT * FROM shares;
+SELECT * FROM friends;
