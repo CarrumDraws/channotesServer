@@ -6,22 +6,18 @@ async function verifyToken(req, res, next) {
   try {
     let token = req.header("Authorization");
     if (!token) return res.status(401).send({ response: "Access Denied" });
-
     if (token.startsWith("Bearer "))
       token = token.slice(7, token.length).trimLeft();
-
     const verification = jwt.verify(token, process.env.JWT_SECRET); // Returns decoded chan_id
 
     // Check if chan_id is in DB
-    // let user = await pool.query("SELECT * FROM users WHERE chan_id = $1", [
-    //   verification.chan_id,
-    // ]);
-    let user = await supabase
+    let { error, data } = await supabase
       .from("users")
       .select()
       .eq("chan_id", verification.chan_id);
-    if (user.error) throw error;
-    if (!user.data.length)
+    if (error) throw new Error(error.message);
+    const user = data?.[0];
+    if (!user)
       return res.status(403).send({ response: "Invalid Bearer Token " });
     req.user = verification; // Set request data, so the next middleware can read it
     next();

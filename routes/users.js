@@ -17,7 +17,7 @@ router.get("/", verifyToken, async (req, res) => {
     });
     if (error) throw new Error(error.message); // Invalid Input
     const user = data?.[0];
-    if (!user) throw new Error("User Not Found"); // User Not Returned
+    if (!user) throw new Error("User Not Found"); // User Not
     delete user.google_id;
     return res.json(user);
   } catch (err) {

@@ -6,6 +6,7 @@ const notesRoutes = require("./routes/notes.js");
 const sharesRoutes = require("./routes/shares.js");
 const userRoutes = require("./routes/users.js");
 const { verifyToken } = require("./middleware/auth.js");
+const { getDocument, saveDocument } = require("./middleware/noteFuncs.js");
 
 const express = require("express");
 const app = express();
@@ -29,27 +30,28 @@ const io = new Server(server, {
 
 // SOCKETIO -----
 io.on("connection", (socket) => {
-  socket.on("get-document", async (note_id) => {
-    const delta = await getDocument(note_id);
-    socket.join(note_id); // Join Note Room
-    socket.emit("load-document", delta); // Load Note Room Data
+  socket.on("get-document", async (token, note_id) => {
+    try {
+      const data = await getDocument(socket, token, note_id);
+      if (!data) throw new Error("No Note Returned");
+      socket.join(note_id); // Join Note Room
+      socket.emit("load-document", data); // Load Note Room Data
 
-    // Broadcast Note Room Changes
-    socket.on("send-changes", (delta) => {
-      socket.broadcast.to(note_id).emit("recieve-changes", delta); // Send to others
-    });
+      // Broadcast Note Room Changes
+      socket.on("send-changes", (delta) => {
+        socket.broadcast.to(note_id).emit("recieve-changes", delta);
+      });
 
-    // Save Document
-    socket.on("save-document", async (delta) => {
-      // Save delta to note_id in DB
-    });
+      // Save Document
+      socket.on("save-document", async (title, text) => {
+        await saveDocument(socket, token, note_id, title, text);
+      });
+    } catch (err) {
+      console.log("SocketIO Error: " + err.message);
+      socket.emit("error", "SocketIO Error: " + err.message);
+    }
   });
 });
-
-// Get Delta from DB
-function getDocument(note_id) {
-  return "Yo";
-}
 
 // FILE STORAGE -----
 const multer = require("multer");
@@ -62,56 +64,7 @@ app.use(cors()); // Allows different-domain app interaction
 app.use(bodyParser.json()); // Parse the JSON request body
 dotenv.config(); // Reading .env files
 
-// FILE STORAGE EXAMPLES -----
-app.post("/photo", uploads.single("photo"), function (req, res, next) {
-  console.log(req.file); // File Data
-  res.json({ status: "Single File Recieved" });
-});
-
-app.post("/photos", uploads.array("photos"), function (req, res, next) {
-  // .array means "Multiple Photos with Key 'photos'"
-  console.log(req.files); // Files Data
-  res.json({ status: "Multiple Files recieved" });
-});
-
-// SUPABASE FILE STORAGE EXAMPLES -----
-app.post("/supabasephoto", uploads.single("image"), async (req, res) => {
-  try {
-    const filename = Date.now() + req.file.originalname;
-    const image = await supabase.storage
-      .from("images") // Bucket Name
-      .upload(filename, req.file.buffer); // Filepath name
-    if (image.error) throw image.error;
-
-    // Get URL of image that was just passed in
-    const url = supabase.storage.from("images").getPublicUrl(filename);
-    console.log(url.data.publicUrl);
-
-    res.json({ status: "Single File Recieved" });
-  } catch (err) {
-    console.log(err);
-    return res.send(err);
-  }
-});
-
-app.delete("/supabasephoto", async (req, res) => {
-  try {
-    let { image } = req.query;
-    const filename = image.split("/").at(-1);
-    console.log(filename);
-    const oldimage = await supabase.storage.from("images").remove(filename);
-    console.log(oldimage);
-    if (oldimage.error) throw oldimage.error;
-
-    res.json({ status: "Single File Deleted" });
-  } catch (err) {
-    console.log(err);
-    return res.send(err);
-  }
-});
-
 // ROUTES WITH IMAGE UPLOAD -----
-
 // Takes in data, bcrypt's google_id, Saves to Postgre, returning user_data
 // Also creates "Folders" Folder using your chanID.
 // NOTE: Treats google_id like a password (bcrypts google_id)...

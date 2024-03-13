@@ -43,19 +43,19 @@ router.get("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let note_id = req.query.note_id;
-    if (!note_id)
-      return res.status(400).send({ response: "Missing Parameters" });
+    if (!chan_id || !note_id)
+      return res.status(400).json({ error: "Missing Parameters" });
 
-    let note = await supabase.rpc("getnote", {
+    let { error, data } = await supabase.rpc("getnote", {
       chan_id_input: chan_id,
       note_id_input: note_id,
     });
-    if (note.error) throw note.error;
-
-    res.send(note.data[0]);
+    if (error) throw new Error(error.message);
+    const note = data?.[0];
+    if (!note) throw new Error("Note Not Found");
+    return res.json(note);
   } catch (err) {
-    console.log(err);
-    return res.send(err);
+    return res.status(404).json({ message: err.message });
   }
 });
 
@@ -65,25 +65,24 @@ router.put("/", verifyToken, async (req, res) => {
     let chan_id = req.user.chan_id;
     let note_id = req.query.note_id;
     let { title, text } = req.body;
-    if (!note_id || !title)
-      return res.status(400).send({ response: "Missing Parameters" });
+    if (!chan_id || !note_id || !title)
+      return res.status(400).json({ error: "Missing Parameters" });
 
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
-    let note = await supabase.rpc("editnote", {
+    let { error, data } = await supabase.rpc("editnote", {
       chan_id_input: chan_id,
       note_id_input: note_id,
       text_input: text,
       title_input: title,
       time_input: time,
     });
-    if (note.error) throw note.error;
-
-    // delete note.rows[0].chan_id;
-    res.send(note.data[0]);
+    if (error) throw new Error(error.message); // Invalid Input
+    const note = data?.[0];
+    if (!note) throw new Error("Note Not Found");
+    return res.json(note);
   } catch (err) {
-    console.log(err);
-    return res.send(err);
+    return res.status(404).json({ message: err.message });
   }
 });
 
