@@ -10,7 +10,14 @@ async function getDocument(socket, token, note_id) {
     return { user: user, noteData: noteData };
   } catch (err) {
     console.log("getDocument Error: " + err.message);
-    socket.emit("error", "Error while Getting Document: " + err.message);
+    socket.emit(
+      "error",
+      "Error while Getting Document: " +
+        err.message +
+        " " +
+        process.env.JWT_SECRET
+    );
+    socket.emit(err);
   }
 }
 
@@ -40,7 +47,7 @@ async function verifyToken(token) {
     if (!user) throw new Error("Invalid Bearer Token");
     return user;
   } catch (err) {
-    throw new Error(err.message);
+    throw new Error(err);
   }
 }
 
