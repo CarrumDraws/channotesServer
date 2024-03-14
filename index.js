@@ -23,19 +23,23 @@ const supabase = require("./supabase.js");
 const { Server } = require("socket.io");
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: [
+      "http://localhost:3000",
+      "https://charming-cuchufli-853ec9.netlify.app",
+    ],
     methods: ["GET", "POST"],
   },
 });
 
-// SOCKETIO -----
+// NOTE SOCKETIO -----
 io.on("connection", (socket) => {
   socket.on("get-document", async (token, note_id) => {
     try {
-      const data = await getDocument(socket, token, note_id);
-      if (!data) throw new Error("No Note Returned");
+      const { user, noteData } = await getDocument(socket, token, note_id);
+      if (!user || !noteData) throw new Error("No Note Returned");
+
       socket.join(note_id); // Join Note Room
-      socket.emit("load-document", data); // Load Note Room Data
+      socket.emit("load-document", noteData); // Load Note Room Data
 
       // Broadcast Note Room Changes
       socket.on("send-changes", (delta) => {
@@ -43,8 +47,13 @@ io.on("connection", (socket) => {
       });
 
       // Save Document
-      socket.on("save-document", async (title, text) => {
-        await saveDocument(socket, token, note_id, title, text);
+      socket.on("save-document", async (chan_id, title, text) => {
+        if (user.chan_id == chan_id)
+          await saveDocument(socket, chan_id, note_id, title, text);
+        else {
+          console.log("saveDocument Error: invalid chan_id");
+          socket.emit("error", "Error while Saving Document: invalid chan_id");
+        }
       });
     } catch (err) {
       console.log("SocketIO Error: " + err.message);
@@ -191,6 +200,7 @@ app.use("/shares", sharesRoutes);
 app.use("/users", userRoutes);
 
 // Alternative to app.listen(5000, () => { });
-server.listen(5000, () => {
-  console.log("Server Started at PORT 5000");
+// On Render, Port Num is overridden.
+server.listen(process.env.PORT || 5000, () => {
+  console.log(`Server Started at PORT ${process.env.PORT || 5000}`);
 });

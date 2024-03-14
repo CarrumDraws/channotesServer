@@ -2,11 +2,12 @@ const jwt = require("jsonwebtoken");
 const supabase = require("../supabase");
 
 // Get Full Note Data from DB
+// Returns BOTH user and noteData
 async function getDocument(socket, token, note_id) {
   try {
     let user = await verifyToken(token);
     let noteData = await getNote(user.chan_id, note_id);
-    return noteData;
+    return { user: user, noteData: noteData };
   } catch (err) {
     console.log("getDocument Error: " + err.message);
     socket.emit("error", "Error while Getting Document: " + err.message);
@@ -14,10 +15,9 @@ async function getDocument(socket, token, note_id) {
 }
 
 // Save Note Data to DB
-async function saveDocument(socket, token, note_id, title, text) {
+async function saveDocument(socket, chan_id, note_id, title, text) {
   try {
-    let user = await verifyToken(token);
-    let noteData = await putNote(user.chan_id, note_id, title, text);
+    let noteData = await putNote(chan_id, note_id, title, text);
     return noteData;
   } catch (err) {
     console.log("saveDocument Error: " + err.message);
@@ -26,6 +26,7 @@ async function saveDocument(socket, token, note_id, title, text) {
 }
 
 // Functional Version of verifyToken()
+// Change so it just checks if token is equal to a provided chan_id
 async function verifyToken(token) {
   try {
     if (!token) throw new Error("Missing Params");
