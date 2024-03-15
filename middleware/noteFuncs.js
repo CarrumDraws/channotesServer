@@ -30,8 +30,6 @@ async function saveDocument(socket, chan_id, note_id, title, text) {
 async function verifyToken(token) {
   try {
     if (!token) throw new Error("Missing Params");
-    console.log(token);
-    console.log(process.env.JWT_SECRET);
     const verification = jwt.verify(token, process.env.JWT_SECRET);
     let { error, data } = await supabase
       .from("users")

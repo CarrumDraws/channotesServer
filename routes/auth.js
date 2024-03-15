@@ -16,7 +16,6 @@ router.get("/hasuser", async (req, res) => {
     });
     if (error) throw new Error(error.message); // Invalid Input
     const user = data?.[0];
-    console.log(user.chan_id);
     if (!user || !user.google_id) throw new Error("User Not Found"); // User Not Found
 
     // ...then check if it's google_id matches.

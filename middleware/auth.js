@@ -4,7 +4,6 @@ const jwt = require("jsonwebtoken");
 // (Authorization): Validate JWT + Sets chan_id in header
 async function verifyToken(req, res, next) {
   try {
-    console.log("Sup");
     const token = req.headers.authorization.split(" ")[1]; // Authorization: 'Bearer TOKEN'
     if (!token) return res.status(401).send({ response: "Access Denied" });
     const verification = jwt.verify(token, process.env.JWT_SECRET); // Returns decoded chan_id
