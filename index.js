@@ -26,6 +26,7 @@ const io = new Server(server, {
     origin: [
       "http://localhost:3000",
       "https://charming-cuchufli-853ec9.netlify.app",
+      "https://channotes-server.onrender.com",
     ],
     methods: ["GET", "POST"],
   },

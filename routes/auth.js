@@ -9,28 +9,24 @@ const jwt = require("jsonwebtoken");
 router.get("/hasuser", async (req, res) => {
   try {
     const { email, google_id } = req.query;
-    if (!email || !google_id)
-      return res.status(400).send({ response: "Missing Parameters" });
-
+    if (!email || !google_id) throw new Error("Missing Parameters");
     // Find User with matching email...
-    let user = await supabase.rpc("hasuser", {
+    let { error, data } = await supabase.rpc("hasuser", {
       email_input: email,
     });
-    if (user.error) throw user.error;
-    user = user.data[0];
-    if (!user || !user.chan_id)
-      return res.status(400).send({ response: "User Not Found" });
+    if (error) throw new Error(error.message); // Invalid Input
+    const user = data?.[0];
+    console.log(user.chan_id);
+    if (!user || !user.google_id) throw new Error("User Not Found"); // User Not Found
 
     // ...then check if it's google_id matches.
-    const isMatch = await bcrypt.compare(google_id, user.google_id);
-    if (!isMatch)
-      return res.status(400).send({ response: "Invalid Google ID" });
+    const isMatch = bcrypt.compare(google_id, user.google_id);
+    if (!isMatch) throw new Error("Invalid Google ID");
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
     delete user.google_id;
     res.status(200).send({ token, user });
   } catch (err) {
-    console.log(err);
-    res.send(err);
+    return res.status(400).json({ message: err.message });
   }
 });
 
