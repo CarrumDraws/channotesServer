@@ -44,7 +44,7 @@ async function verifyToken(token) {
   }
 }
 
-// Gets Note
+// Gets All Note Data
 async function getNote(chan_id, note_id) {
   try {
     if (!chan_id || !note_id) throw new Error("Missing Params");
@@ -55,29 +55,37 @@ async function getNote(chan_id, note_id) {
     if (error) throw new Error(error.message);
     const note = data?.[0];
     if (!note) throw new Error("Note Not Found");
-    return note;
+    return res.json(note);
   } catch (err) {
     throw new Error(err.message);
   }
 }
 
-// Edits Note
-async function putNote(chan_id, note_id, title, text) {
+// Edits Notetext
+async function putNote(chan_id, note_id, title, subtext, text) {
   try {
-    if (!chan_id || !note_id || !title) throw new Error("Missing Params");
+    if (
+      !chan_id ||
+      !note_id ||
+      title == null ||
+      subtext == null ||
+      text == null
+    )
+      throw new Error("Missing Params");
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
-    let { error, data } = await supabase.rpc("editnote", {
+    let { error, data } = await supabase.rpc("editnotetext", {
       chan_id_input: chan_id,
       note_id_input: note_id,
-      time_input: time,
-      text_input: text,
       title_input: title,
+      subtext_input: subtext,
+      text_input: text,
+      time_input: time,
     });
     if (error) throw new Error(error.message);
     const note = data?.[0];
     if (!note) throw new Error("Note Not Found");
-    return note;
+    return res.json(note);
   } catch (err) {
     throw new Error(err.message);
   }

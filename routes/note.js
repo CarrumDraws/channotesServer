@@ -12,33 +12,32 @@ router.post("/", verifyToken, async (req, res) => {
 
     // If no folder_id, get ID of your Home Folder
     if (!folder_id) {
-      let homefolder = await supabase.rpc("getfolderhome", {
+      let { error, data } = await supabase.rpc("getfolderhome", {
         chan_id_input: chan_id,
       });
-      if (homefolder.error) throw homefolder.error;
-      folder_id = homefolder.data[0].id;
+      if (error) throw new Error(error.message); // Invalid Input
+      folder_id = data[0].id;
     }
 
     // Insert New Note in Folder
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
-    let note = await supabase.rpc("newnote", {
+    let { error, data } = await supabase.rpc("newnote", {
       chan_id_input: chan_id,
       folder_id_input: folder_id,
       title_input: "New Note",
       time_input: time,
     });
-    if (note.error) throw note.error;
-
-    // delete note.rows[0].chan_id;
-    res.send(note.data[0]);
+    if (error) throw new Error(error.message); // Invalid Input
+    const note = data?.[0];
+    if (!note) throw new Error("Note Not Created"); // User Not
+    return res.json(note);
   } catch (err) {
-    console.log(err);
-    return res.send(err);
+    return res.status(404).json({ message: err.message });
   }
 });
 
-// Gets Text of Specific Note
+// Gets All Data of Specific Note
 router.get("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
@@ -59,22 +58,63 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
-// Edit a Note’s Contents + Sets Time Accessed + Renames Note
+// Edits notes table (metadata)
 router.put("/", verifyToken, async (req, res) => {
   try {
     let chan_id = req.user.chan_id;
     let note_id = req.query.note_id;
-    let { title, text } = req.body;
-    if (!chan_id || !note_id || !title)
+
+    let { folder_id, pinned, locked, password } = req.body;
+    if (
+      !note_id ||
+      !folder_id ||
+      pinned == null ||
+      locked == null ||
+      password == null
+    )
+      return res.status(400).send({ response: "Missing Parameters" });
+
+    // Update Note
+    let { error, data } = await supabase.rpc("editnote", {
+      chan_id_input: chan_id,
+      note_id_input: note_id,
+      folder_id_input: folder_id,
+      pinned_input: pinned,
+      locked_input: locked,
+      password_input: password,
+    });
+    if (error) throw new Error(error.message); // Invalid Input
+    const note = data?.[0];
+    if (!note) throw new Error("Note Not Found");
+    return res.json(note);
+  } catch (err) {
+    return res.status(404).json({ message: err.message });
+  }
+});
+
+// Edits notetext (title, subtext, text, date_accessed)
+router.put("/text", verifyToken, async (req, res) => {
+  try {
+    let chan_id = req.user.chan_id;
+    let note_id = req.query.note_id;
+    let { title, subtext, text } = req.body;
+    if (
+      !chan_id ||
+      !note_id ||
+      title == null ||
+      subtext == null ||
+      text == null
+    )
       return res.status(400).json({ error: "Missing Parameters" });
 
     let date = new Date();
     let time = date.toISOString().slice(0, 19).replace("T", " ");
-    let { error, data } = await supabase.rpc("editnote", {
+    let { error, data } = await supabase.rpc("editnotetext", {
       chan_id_input: chan_id,
       note_id_input: note_id,
-      text_input: text,
       title_input: title,
+      subtext_input: subtext,
+      text_input: text,
       time_input: time,
     });
     if (error) throw new Error(error.message); // Invalid Input
@@ -86,65 +126,6 @@ router.put("/", verifyToken, async (req, res) => {
   }
 });
 
-// Gets Metadata (folder_id, pinned, locked, password, font_color, background_color)
-router.get("/meta", verifyToken, async (req, res) => {
-  try {
-    let chan_id = req.user.chan_id;
-    let note_id = req.query.note_id;
-    if (!note_id)
-      return res.status(400).send({ response: "Missing Parameters" });
-    let note = await supabase.rpc("getnotemeta", {
-      chan_id_input: chan_id,
-      note_id_input: note_id,
-    });
-    if (note.error) throw note.error;
-    res.send(note.data[0]);
-  } catch (err) {
-    console.log(err);
-    return res.send(err);
-  }
-});
-
-// Edit Note MetaData (move(folder_id), pinned, locked, password, font_color, background_color)
-router.put("/meta", verifyToken, async (req, res) => {
-  try {
-    let chan_id = req.user.chan_id;
-    let note_id = req.query.note_id;
-
-    let { folder_id, pinned, locked, password, font_color, background_color } =
-      req.body;
-    if (
-      !note_id ||
-      !folder_id ||
-      !pinned ||
-      !locked ||
-      !password ||
-      !font_color ||
-      !background_color
-    )
-      return res.status(400).send({ response: "Missing Parameters" });
-
-    // Update Note
-    let note = await supabase.rpc("editnotemeta", {
-      chan_id_input: chan_id,
-      note_id_input: note_id,
-      folder_id_input: folder_id,
-      pinned_input: pinned,
-      locked_input: locked,
-      password_input: password,
-      font_color_input: font_color,
-      background_color_input: background_color,
-    });
-    if (note.error) throw note.error;
-
-    // delete note.rows[0].chan_id;
-    res.send(note.data[0]);
-  } catch (err) {
-    console.log(err);
-    return res.send(err);
-  }
-});
-
 // Delete Note
 router.delete("/", verifyToken, async (req, res) => {
   try {
@@ -152,15 +133,14 @@ router.delete("/", verifyToken, async (req, res) => {
     let note_id = req.query.note_id;
     if (!note_id)
       return res.status(400).send({ response: "Missing Parameters" });
-    let note = await supabase.rpc("deletenote", {
+    let { error, data } = await supabase.rpc("deletenote", {
       chan_id_input: chan_id,
       note_id_input: note_id,
     });
-    if (note.error) throw note.error;
+    if (error) throw new Error(error.message); // Invalid Input
     res.send({ response: "Success" });
   } catch (err) {
-    console.log(err);
-    return res.send(err);
+    return res.status(404).json({ message: err.message });
   }
 });
 

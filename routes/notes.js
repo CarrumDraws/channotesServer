@@ -20,7 +20,7 @@ router.get("/", verifyToken, async (req, res) => {
       folder_id = data[0].id;
     }
 
-    // Find Child Notes
+    // Find Notes
     let { data, error } = await supabase.rpc("getnotes", {
       chan_id_input: chan_id,
       folder_id_input: folder_id,
