@@ -15,9 +15,9 @@ async function getDocument(socket, token, note_id) {
 }
 
 // Save Note Data to DB
-async function saveDocument(socket, chan_id, note_id, title, text) {
+async function saveDocument(socket, chan_id, note_id, title, subtext, text) {
   try {
-    let noteData = await putNote(chan_id, note_id, title, text);
+    let noteData = await putNote(chan_id, note_id, title, subtext, text);
     return noteData;
   } catch (err) {
     console.log("saveDocument Error: " + err.message);
@@ -55,7 +55,7 @@ async function getNote(chan_id, note_id) {
     if (error) throw new Error(error.message);
     const note = data?.[0];
     if (!note) throw new Error("Note Not Found");
-    return res.json(note);
+    return note;
   } catch (err) {
     throw new Error(err.message);
   }
@@ -85,7 +85,7 @@ async function putNote(chan_id, note_id, title, subtext, text) {
     if (error) throw new Error(error.message);
     const note = data?.[0];
     if (!note) throw new Error("Note Not Found");
-    return res.json(note);
+    return note;
   } catch (err) {
     throw new Error(err.message);
   }

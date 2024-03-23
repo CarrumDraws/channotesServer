@@ -65,6 +65,7 @@ router.put("/", verifyToken, async (req, res) => {
     let note_id = req.query.note_id;
 
     let { folder_id, pinned, locked, password } = req.body;
+    console.log("Pinned is " + pinned);
     if (
       !note_id ||
       !folder_id ||
@@ -73,7 +74,6 @@ router.put("/", verifyToken, async (req, res) => {
       password == null
     )
       return res.status(400).send({ response: "Missing Parameters" });
-
     // Update Note
     let { error, data } = await supabase.rpc("editnote", {
       chan_id_input: chan_id,
