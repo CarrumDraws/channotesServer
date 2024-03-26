@@ -4,21 +4,13 @@ const router = express.Router();
 const { verifyToken } = require("../middleware/auth");
 
 // Gets Array of Notes Data for Menu Display.
-// If no folder_id Gets homepage Notes.
+// If no folder_id gets "Your Notes".
 router.get("/", verifyToken, async (req, res) => {
   try {
-    let chan_id = req.user.chan_id;
-    let folder_id = req.query.folder_id;
+    const { chan_id } = req.user;
+    let { folder_id } = req.query;
     if (!chan_id) return res.status(400).json({ error: "Missing Parameters" });
-
-    // If no folder_id, get ID of your Home Folder
-    if (!folder_id) {
-      let { data, error } = await supabase.rpc("getfolderhome", {
-        chan_id_input: chan_id,
-      });
-      if (error) throw new Error(error.message);
-      folder_id = data[0].id;
-    }
+    if (!folder_id) folder_id = null;
 
     // Find Notes
     let { data, error } = await supabase.rpc("getnotes", {

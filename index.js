@@ -98,10 +98,11 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
     const image = await supabase.storage
       .from("images")
       .upload(filename, req.file.buffer);
-    if (image.error) throw image.error;
+    if (image.error) throw new Error(image.error.message);
 
     // Get URL of image that was just uploaded
     let url = supabase.storage.from("images").getPublicUrl(filename);
+    if (url.error) throw new Error(url.error.message);
     url = url.data.publicUrl;
 
     // bcrypt google_id
@@ -119,7 +120,7 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
     });
     if (error) throw new Error(error.message);
     user = data?.[0];
-    if (!user) throw new Error("User Not Found"); // User Not
+    if (!user) throw new Error("User Not Found");
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
     return res.json({ token, user });
   } catch (err) {
