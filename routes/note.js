@@ -65,7 +65,7 @@ router.put("/", verifyToken, async (req, res) => {
     let note_id = req.query.note_id;
 
     let { folder_id, pinned, locked, password } = req.body;
-    console.log("Pinned is " + pinned);
+
     if (
       !note_id ||
       !folder_id ||

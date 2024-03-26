@@ -108,8 +108,8 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
     const salt = await bcrypt.genSalt();
     const googleHash = await bcrypt.hash(google_id, salt);
 
-    // Save User to Supabase
-    let user = await supabase.rpc("signup", {
+    // Save User to Supabase + Creates "Your Folders" folder
+    let { data, error } = await supabase.rpc("signup", {
       google_id_input: googleHash,
       first_name_input: first_name,
       last_name_input: last_name,
@@ -117,25 +117,13 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
       email_input: email,
       image_input: url,
     });
-    if (user.error) throw user.error; // handle errors like so
-    user = user.data[0];
-
-    // Create Homepage Folder
-    let date = new Date();
-    let time = date.toISOString().slice(0, 19).replace("T", " ");
-    let folder = await supabase.rpc("signup_newfolder", {
-      chan_id_input: user.chan_id,
-      folder_id_input: null,
-      title_input: "Your Folders",
-      date_created_input: time,
-    });
-    if (folder.error) throw error;
+    if (error) throw new Error(error.message);
+    user = data?.[0];
+    if (!user) throw new Error("User Not Found"); // User Not
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
-    delete user.google_id;
-    res.status(200).send({ token, user });
+    return res.json({ token, user });
   } catch (err) {
-    console.log(err);
-    res.send(err);
+    return res.status(404).json({ message: err.message });
   }
 });
 

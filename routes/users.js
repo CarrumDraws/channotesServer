@@ -10,15 +10,14 @@ const { verifyToken } = require("../middleware/auth");
 // Gets Data of a User + Friends Num
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const { chan_id } = req.query;
+    const { chan_id } = req.user;
     if (!chan_id) return res.status(400).json({ error: "Missing Parameters" });
     const { error, data } = await supabase.rpc("getuser", {
       chan_id_input: chan_id,
     });
     if (error) throw new Error(error.message); // Invalid Input
     const user = data?.[0];
-    if (!user) throw new Error("User Not Found"); // User Not
-    delete user.google_id;
+    if (!user) throw new Error("User Not Found");
     return res.json(user);
   } catch (err) {
     return res.status(404).json({ message: err.message });
