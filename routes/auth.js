@@ -10,15 +10,14 @@ router.get("/hasuser", async (req, res) => {
   try {
     const { email, google_id } = req.query;
     if (!email || !google_id) throw new Error("Missing Parameters");
-    // Find User with matching email...
     let { error, data } = await supabase.rpc("hasuser", {
       email_input: email,
     });
-    if (error) throw new Error(error.message); // Invalid Input
+    if (error) throw new Error(error.message);
     const user = data?.[0];
-    if (!user || !user.google_id) throw new Error("User Not Found"); // User Not Found
+    if (!user) throw new Error("User Not Found");
 
-    // ...then check if it's google_id matches.
+    // Check if google_id matches.
     const isMatch = bcrypt.compare(google_id, user.google_id);
     if (!isMatch) throw new Error("Invalid Google ID");
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);

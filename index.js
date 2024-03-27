@@ -120,7 +120,7 @@ app.post("/auth/signup", uploads.single("image"), async (req, res, next) => {
     });
     if (error) throw new Error(error.message);
     user = data?.[0];
-    if (!user) throw new Error("User Not Found");
+    if (!user) throw new Error("User Creation Error");
     const token = jwt.sign({ chan_id: user.chan_id }, process.env.JWT_SECRET);
     return res.json({ token, user });
   } catch (err) {
