@@ -15,9 +15,9 @@ async function getDocument(socket, token, note_id) {
 }
 
 // Save Note Data to DB
-async function saveDocument(socket, chan_id, note_id, title, subtext, text) {
+async function saveDocument(socket, chan_id, note_id, text, delta) {
   try {
-    let noteData = await putNote(chan_id, note_id, title, subtext, text);
+    let noteData = await putNote(chan_id, note_id, text, delta);
     return noteData;
   } catch (err) {
     console.log("saveDocument Error: " + err.message);
@@ -62,25 +62,15 @@ async function getNote(chan_id, note_id) {
 }
 
 // Edits Notetext
-async function putNote(chan_id, note_id, title, subtext, text) {
+async function putNote(chan_id, note_id, text, delta) {
   try {
-    if (
-      !chan_id ||
-      !note_id ||
-      title == null ||
-      subtext == null ||
-      text == null
-    )
-      throw new Error("Missing Params");
-    let date = new Date();
-    let time = date.toISOString().slice(0, 19).replace("T", " ");
+    if (!chan_id || !note_id) throw new Error("Missing Params");
     let { error, data } = await supabase.rpc("editnotetext", {
       chan_id_input: chan_id,
       note_id_input: note_id,
-      title_input: title,
-      subtext_input: subtext,
+      title_input: "TEMP TITLE",
       text_input: text,
-      time_input: time,
+      delta_input: delta,
     });
     if (error) throw new Error(error.message);
     const note = data?.[0];

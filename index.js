@@ -48,9 +48,9 @@ io.on("connection", (socket) => {
       });
 
       // Save Document
-      socket.on("save-document", async (chan_id, title, subtext, text) => {
+      socket.on("save-document", async (chan_id, text, delta) => {
         if (user.chan_id == chan_id)
-          await saveDocument(socket, chan_id, note_id, title, subtext, text);
+          await saveDocument(socket, chan_id, note_id, text, delta);
         else {
           console.log("saveDocument Error: invalid chan_id");
           socket.emit("error", "Error while Saving Document: invalid chan_id");
