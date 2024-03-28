@@ -6,7 +6,11 @@ const notesRoutes = require("./routes/notes.js");
 const sharesRoutes = require("./routes/shares.js");
 const userRoutes = require("./routes/users.js");
 const { verifyToken } = require("./middleware/auth.js");
-const { getDocument, saveDocument } = require("./middleware/noteFuncs.js");
+const {
+  getDocument,
+  saveDeltaText,
+  saveTitle,
+} = require("./middleware/noteFuncs.js");
 
 const express = require("express");
 const app = express();
@@ -42,17 +46,28 @@ io.on("connection", (socket) => {
       socket.join(note_id); // Join Note Room
       socket.emit("load-document", noteData); // Load Note Room Data
 
-      // Broadcast Note Room Changes
-      socket.on("send-changes", (delta) => {
-        socket.broadcast.to(note_id).emit("recieve-changes", delta);
+      // Broadcast Text Changes to Note Room
+      socket.on("send-text-changes", (delta) => {
+        socket.broadcast.to(note_id).emit("recieve-text-changes", delta);
+      });
+
+      // Broadcast Title Changes to Note Room + Save
+      socket.on("send-title-changes", async (chan_id, title) => {
+        if (user.chan_id == chan_id) {
+          socket.broadcast.to(note_id).emit("recieve-title-changes", title);
+          await saveTitle(socket, chan_id, note_id, title);
+        } else {
+          console.log("saveTitle Error: invalid chan_id");
+          socket.emit("error", "Error while Saving Title: invalid chan_id");
+        }
       });
 
       // Save Document
-      socket.on("save-document", async (chan_id, text, delta) => {
+      socket.on("save-text", async (chan_id, text, delta) => {
         if (user.chan_id == chan_id)
-          await saveDocument(socket, chan_id, note_id, text, delta);
+          await saveDeltaText(socket, chan_id, note_id, text, delta);
         else {
-          console.log("saveDocument Error: invalid chan_id");
+          console.log("saveDeltaText Error: invalid chan_id");
           socket.emit("error", "Error while Saving Document: invalid chan_id");
         }
       });

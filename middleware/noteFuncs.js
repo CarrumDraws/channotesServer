@@ -14,13 +14,24 @@ async function getDocument(socket, token, note_id) {
   }
 }
 
-// Save Note Data to DB
-async function saveDocument(socket, chan_id, note_id, text, delta) {
+// Save Delta + Text to DB
+async function saveDeltaText(socket, chan_id, note_id, text, delta) {
   try {
-    let noteData = await putNote(chan_id, note_id, text, delta);
+    let noteData = await putDeltaText(chan_id, note_id, text, delta);
     return noteData;
   } catch (err) {
-    console.log("saveDocument Error: " + err.message);
+    console.log("saveDeltaText Error: " + err.message);
+    socket.emit("error", "Error while Saving Document: " + err.message);
+  }
+}
+
+// Save Delta + Text to DB
+async function saveTitle(socket, chan_id, note_id, title) {
+  try {
+    let noteData = await putTitle(chan_id, note_id, title);
+    return noteData;
+  } catch (err) {
+    console.log("saveTitle Error: " + err.message);
     socket.emit("error", "Error while Saving Document: " + err.message);
   }
 }
@@ -61,14 +72,13 @@ async function getNote(chan_id, note_id) {
   }
 }
 
-// Edits Notetext
-async function putNote(chan_id, note_id, text, delta) {
+// Saves Delta and Text to DB
+async function putDeltaText(chan_id, note_id, text, delta) {
   try {
     if (!chan_id || !note_id) throw new Error("Missing Params");
     let { error, data } = await supabase.rpc("editnotetext", {
       chan_id_input: chan_id,
       note_id_input: note_id,
-      title_input: "TEMP TITLE",
       text_input: text,
       delta_input: delta,
     });
@@ -81,4 +91,22 @@ async function putNote(chan_id, note_id, text, delta) {
   }
 }
 
-module.exports = { getDocument, saveDocument };
+// Saves Title to DB
+async function putTitle(chan_id, note_id, title) {
+  try {
+    if (!chan_id || !note_id) throw new Error("Missing Params");
+    let { error, data } = await supabase.rpc("editnotetitle", {
+      chan_id_input: chan_id,
+      note_id_input: note_id,
+      title_input: title,
+    });
+    if (error) throw new Error(error.message);
+    const note = data?.[0];
+    if (!note) throw new Error("Note Not Found");
+    return note;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+}
+
+module.exports = { getDocument, saveDeltaText, saveTitle };
